@@ -40,6 +40,11 @@ export function BlockEditor({ initialBlocks, media = [], inputName = "blocks" }:
   return (
     <div className="block-editor">
       <input type="hidden" name={inputName} value={JSON.stringify(blocks)} />
+      {blocks.length === 0 && (
+        <div className="empty-state" style={{ borderBottom: "1px solid var(--color-divider)", fontSize: 13 }}>
+          Ingen blokke endnu. Vælg en bloktype herunder og klik Tilføj blok.
+        </div>
+      )}
       {blocks.map((block, index) => (
         <section className="editor-block" key={block.id}>
           <header className="editor-block-header">
@@ -47,7 +52,7 @@ export function BlockEditor({ initialBlocks, media = [], inputName = "blocks" }:
             <span className="flex gap-1">
               <button className="btn btn-icon btn-ghost" type="button" onClick={() => move(index, -1)} aria-label="Flyt op"><ChevronUp size={16} /></button>
               <button className="btn btn-icon btn-ghost" type="button" onClick={() => move(index, 1)} aria-label="Flyt ned"><ChevronDown size={16} /></button>
-              <button className="btn btn-icon btn-ghost" type="button" onClick={() => setBlocks((all) => all.filter((_, i) => i !== index))} aria-label="Slet blok"><Trash2 size={16} /></button>
+              <button className="btn btn-icon btn-ghost" type="button" onClick={() => { if (!window.confirm("Slet denne blok?")) return; setBlocks((all) => all.filter((_, i) => i !== index)); }} aria-label="Slet blok"><Trash2 size={16} /></button>
             </span>
           </header>
           {block.type === "paragraph" && <ParagraphEditor value={block.data.content} onChange={(content) => update(index, { content })} />}

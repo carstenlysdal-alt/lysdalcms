@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BriefcaseBusiness, FileText, Images, LogOut, Settings, WalletCards } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
+import { NavLinks } from "@/components/admin/nav-links";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -10,13 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="admin-shell">
       <header className="nav">
         <Link className="nav-brand" href="/artikler">LYSDALS / CMS</Link>
-        <nav className="admin-links" aria-label="Primær navigation">
-          <Link href="/artikler"><FileText size={16} /> Artikler</Link>
-          <Link href="/medier"><Images size={16} /> Medier</Link>
-          <Link href="/opgaver"><BriefcaseBusiness size={16} /> Opgaver</Link>
-          <Link href="/honorar"><WalletCards size={16} /> Honorar</Link>
-          <span className="nav-disabled"><Settings size={16} /> Indstillinger</span>
-        </nav>
+        <NavLinks />
         <div className="nav-user">
           <span><strong>{session.user.name}</strong><small>{session.user.roleName}</small></span>
           <form action={async () => { "use server"; await signOut({ redirectTo: "/login" }); }}>

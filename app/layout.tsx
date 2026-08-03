@@ -1,13 +1,26 @@
 import type { Metadata } from "next";
-import { Archivo } from "next/font/google";
+import { Schibsted_Grotesk, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-// Modernist uses Archivo for both headings and body (weights 400/600/800).
-// We bind the next/font variable to the design-system's --font-body / --font-heading.
-const archivo = Archivo({
-  variable: "--font-archivo",
+const schibsted = Schibsted_Grotesk({
+  variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "600", "800"],
+  weight: ["400", "500", "600", "700", "900"],
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-serif",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+const jetbrains = JetBrains_Mono({
+  variable: "--font-mono-var",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
   display: "swap",
 });
 
@@ -22,15 +35,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="da" className={`${archivo.variable} h-full antialiased`}>
-      <body
-        className="min-h-full flex flex-col"
-        style={{
-          // Bind next/font into the Modernist token names.
-          ["--font-body" as string]: "var(--font-archivo), system-ui, sans-serif",
-          ["--font-heading" as string]: "var(--font-archivo), system-ui, sans-serif",
-        }}
-      >
+    <html lang="da" className={`${schibsted.variable} ${playfair.variable} ${jetbrains.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col">
         {children}
       </body>
     </html>
