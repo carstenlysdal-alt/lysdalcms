@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BriefcaseBusiness, FileText, Images, WalletCards } from "lucide-react";
+import { BriefcaseBusiness, FileText, Images, MessageSquare, Radio, Rss, WalletCards } from "lucide-react";
 
 const links = [
-  { href: "/artikler", label: "Artikler", icon: FileText },
+  { href: "/artikler", label: "Publishing", icon: FileText },
+  { href: "/signaler", label: "Signaler", icon: Rss },
+  { href: "/emner", label: "Emner", icon: Radio },
+  { href: "/chat", label: "Skriv", icon: MessageSquare },
   { href: "/medier", label: "Medier", icon: Images },
   { href: "/opgaver", label: "Opgaver", icon: BriefcaseBusiness },
   { href: "/honorar", label: "Honorar", icon: WalletCards },

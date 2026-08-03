@@ -42,6 +42,9 @@ model Instance {
   assignments        Assignment[]
   honorRates         HonorRate[]
   honorEntries       HonorEntry[]
+  chatMessages       ChatMessage[]
+  topics             Topic[]
+  signals            Signal[]
 }
 
 // ── CMS-05: konfigurerbare roller (rettigheder som data, ikke hardkodet) ────
@@ -308,4 +311,55 @@ model HonorEntry {
 
   @@index([instansId, status])
   @@index([authorId, generatedAt])
+}
+
+// ── AI Chat ──────────────────────────────────────────────────────────────────
+model ChatMessage {
+  id        String   @id @default(cuid())
+  sessionId String   // grupperer beskeder i én samtale
+  role      String   // user | assistant
+  content   String
+  instansId String
+  instans   Instance @relation(fields: [instansId], references: [id])
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([instansId, createdAt])
+}
+
+// ── Emner (Topics) ────────────────────────────────────────────────────────────
+model Topic {
+  id          String   @id @default(cuid())
+  titel       String
+  beskrivelse String?
+  coverUrl    String?
+  kategorier  Json     @default("[]") // string[]
+  notable     Boolean  @default(false)
+  kildeAntal  Int      @default(0)
+  instansId   String
+  instans     Instance @relation(fields: [instansId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([instansId])
+}
+
+// ── Signaler ──────────────────────────────────────────────────────────────────
+model Signal {
+  id         String   @id @default(cuid())
+  overskrift String
+  brødtekst  String?
+  kilde      String   @default("Intern") // Ritzau | Reuters | AP | Intern | ...
+  kildeUrl   String?
+  notable    Boolean  @default(false)
+  breaking   Boolean  @default(false)
+  laest      Boolean  @default(false)
+  version    Int      @default(1)
+  instansId  String
+  instans    Instance @relation(fields: [instansId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@index([instansId, laest])
+  @@index([instansId, createdAt])
 }

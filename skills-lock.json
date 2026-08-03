@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "payload": {
+      "source": "payloadcms/payload",
+      "sourceType": "github",
+      "skillPath": "tools/claude-plugin/skills/payload/SKILL.md",
+      "computedHash": "ecc3e51b13a323f7a390e5b7d82fa96b12e5221ba561c9e3925ce6aeb05f4190"
+    }
+  }
+}

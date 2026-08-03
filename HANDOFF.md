@@ -1,7 +1,7 @@
 # HANDOFF — Lysdals CMS fundament
 
-> **Status:** Fundamentet, CMS-03 mediebibliotek v1 og CMS-06 opgave-/honorarmodul v1 er implementeret.
-> **Dato:** 2026-08-03. **Repo:** `/Users/Lysdal/GITS/Local2027/cms/` (Next.js 16, nystartet).
+> **Status:** Fundamentet, CMS-03, CMS-06, Y Business-redesign, AI Chat, Emner og Signaler er implementeret.
+> **Dato:** 2026-08-03. **Repo:** `/Users/Lysdal/GITS/Local2027/cms/` (Next.js 16).
 
 Denne fil er overleveringsloggen. Læs den FØR du bygger videre — den indeholder
 alle beslutninger, Next 16-faldgruber, præcis hvad der er gjort, og de næste trin.
@@ -25,7 +25,45 @@ alle beslutninger, Next 16-faldgruber, præcis hvad der er gjort, og de næste t
 - Runtime-verificeret med redaktør og journalist: publicering → opgave Godkendt → 800 kr. Afventer → Godkendt → CSV.
 - Testsuiten er udvidet til 11 tests med opgavevalidering, roller, transitions, deadlines og honorarberegning.
 
-### Næste anbefalede arbejde efter CMS-06 v1
+---
+
+## Arbejdslog — Y Business-redesign + UI-polish, 2026-08-03
+
+- Designsystemet er skiftet fra Modernist (Archivo, rød-orange) til Y Business-paletten.
+- **Fonte**: Schibsted Grotesk (brødtekst), Playfair Display (headings, serif italic), JetBrains Mono (labels, tags, tabelheder) via `next/font/google`.
+- **Farver**: Aubergine accent `#361352`, warm paper baggrund `#FAFAF8`, hvide kortflader, accent-baserede skygger.
+- **Komponenter**: pill-tags (9999px), nav-underline-animation (scaleX), kort-bundlinje-hover, forfatteravatar-cirkler, inline BREAKING-badge, quick-filter pills.
+- **Status-dots**: grøn (publiceret), amber (planlagt), grå (kladde/arkiv) — Y Business-semantik.
+- Nav: aktiv side markeres via `aria-current` + underline-animation. "Indstillinger" fjernet.
+- CMS-XX eyebrows fjernet fra alle sider. Block-editor: tom-tilstand + delete-bekræftelse. Success-besked auto-forsvinder.
+
+## Arbejdslog — AI Chat, Emner og Signaler, 2026-08-03
+
+### AI Chat (`/chat`)
+- Ny `ChatMessage`-model i Prisma: `sessionId`, `role`, `content`, `instansId`, `userId`.
+- Streaming API-route `POST /api/chat` med Anthropic SDK (`claude-sonnet-4-6`), prompt caching via systembesked, fuld samtalehistorik (op til 20 beskeder).
+- To tilstande: **Spørg** (research/undersøgelse) og **Auto** (redaktionel assistent).
+- Client-side streaming med `ReadableStream`, realtids-tekst i chat-bobler.
+- Kontekstuelle prompt-chips på startsiden. Chathistorik bevares på tværs af sessioner via `?session=`-param.
+- `@anthropic-ai/sdk` installeret.
+
+### Emner (`/emner`)
+- Ny `Topic`-model: `titel`, `beskrivelse`, `coverUrl`, `kategorier` (JSON string[]), `notable`, `kildeAntal`.
+- Kortgrid med 16:9 cover-billede, NOTABLE-badge, kategori-tags, kildeantal, relativ tid.
+- Kategorifilterchips genereres dynamisk fra eksisterende emner.
+- Nyt emne-formular på `/emner/ny`. Emner kan åbnes direkte i Chat med `?emne=`-param.
+
+### Signaler (`/signaler`)
+- Ny `Signal`-model: `overskrift`, `brødtekst`, `kilde`, `kildeUrl`, `notable`, `breaking`, `laest`, `version`.
+- Live pulserende dot (CSS animation). Feed sorteret nyeste først, 100 signaler max.
+- Kildefilter (Alle/Ritzau/Reuters/AP/Intern), "Vis læste" toggle.
+- "Markér alle læst" server action. Hvert signal har "Skriv"-knap der åbner Chat med signal som kontekst.
+- Redaktører kan tilføje signaler manuelt via `<details>`-formular.
+
+### Navigation
+- Nav-links: Publishing · Signaler · Emner · Skriv · Medier · Opgaver · Honorar.
+
+### Næste anbefalede arbejde
 
 1. CMS-07 offentlig indsendelsesformular og redaktionel indbakke.
 2. Notifikationskanal til automatiske 48/12-timers deadlinepåmindelser (UI-advarsler er med; e-mail/push er ikke).

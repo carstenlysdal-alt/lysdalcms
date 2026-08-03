@@ -15,6 +15,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "@auth/prisma-adapter": "^2.11.3",
     "@prisma/client": "^6.19.3",
     "@tiptap/pm": "^3.29.2",
