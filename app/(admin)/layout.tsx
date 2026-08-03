@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FileText, Images, LogOut, Settings } from "lucide-react";
+import { BriefcaseBusiness, FileText, Images, LogOut, Settings, WalletCards } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +13,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <nav className="admin-links" aria-label="Primær navigation">
           <Link href="/artikler"><FileText size={16} /> Artikler</Link>
           <Link href="/medier"><Images size={16} /> Medier</Link>
+          <Link href="/opgaver"><BriefcaseBusiness size={16} /> Opgaver</Link>
+          <Link href="/honorar"><WalletCards size={16} /> Honorar</Link>
           <span className="nav-disabled"><Settings size={16} /> Indstillinger</span>
         </nav>
         <div className="nav-user">

@@ -9,9 +9,9 @@ const areas = ["Slagelse", "Korsør", "Skælskør", "Hashøj", "Vemmelev"];
 
 const roles = [
   { navn: "Ansvarshavende redaktør", permissions: Object.values(PERMISSIONS) },
-  { navn: "Redaktionsleder", permissions: [PERMISSIONS.ARTICLE_CREATE, PERMISSIONS.ARTICLE_EDIT_ALL, PERMISSIONS.SOURCE_VIEW_CONFIDENTIAL, PERMISSIONS.SUPPORT_READ, PERMISSIONS.HONORAR_VIEW, PERMISSIONS.FRONTPAGE_EDIT] },
-  { navn: "Freelancejournalist", permissions: [PERMISSIONS.ARTICLE_CREATE, PERMISSIONS.SOURCE_VIEW_CONFIDENTIAL] },
-  { navn: "Medieproducent", permissions: [PERMISSIONS.MEDIA_MANAGE] },
+  { navn: "Redaktionsleder", permissions: [PERMISSIONS.ARTICLE_CREATE, PERMISSIONS.ARTICLE_EDIT_ALL, PERMISSIONS.SOURCE_VIEW_CONFIDENTIAL, PERMISSIONS.SUPPORT_READ, PERMISSIONS.HONORAR_VIEW, PERMISSIONS.HONOR_MANAGE, PERMISSIONS.TASK_MANAGE, PERMISSIONS.TASK_VIEW_ALL, PERMISSIONS.FRONTPAGE_EDIT] },
+  { navn: "Freelancejournalist", permissions: [PERMISSIONS.ARTICLE_CREATE, PERMISSIONS.SOURCE_VIEW_CONFIDENTIAL, PERMISSIONS.HONOR_VIEW_OWN] },
+  { navn: "Medieproducent", permissions: [PERMISSIONS.MEDIA_MANAGE, PERMISSIONS.HONOR_VIEW_OWN] },
   { navn: "Community manager", permissions: [PERMISSIONS.ARTICLE_CREATE] },
   { navn: "Salgs- og partnerskabsansvarlig", permissions: [PERMISSIONS.SUPPORT_READ, PERMISSIONS.SUPPORT_MANAGE] },
   { navn: "Teknisk produktansvarlig", permissions: [PERMISSIONS.USERS_MANAGE] },
@@ -71,6 +71,21 @@ async function main() {
     });
   }
 
+  const rates = [
+    ["Kort nyhedsartikel", 300, 500, 400], ["Standardartikel", 600, 1000, 800],
+    ["Dybdegående artikel/reportage", 1500, 2500, 2000], ["Interview", 800, 1400, 1100],
+    ["Fotoreportage", 500, 1200, 850], ["Lydreportage/podcast", 1200, 2500, 1800],
+    ["Videoproduktion", 2000, 4000, 3000], ["Live-dækning", 400, 600, 500],
+    ["Opdatering af artikel", 150, 300, 225], ["Researchopgave", 300, 400, 350],
+  ] as const;
+  for (const [leverancetype, minimum, maksimum, standard] of rates) {
+    await db.honorRate.upsert({
+      where: { instansId_leverancetype: { instansId: instance.id, leverancetype } },
+      update: { minimum, maksimum, standard, aktiv: true },
+      create: { leverancetype, minimum, maksimum, standard, instansId: instance.id },
+    });
+  }
+
   const editorAuthor = await db.author.upsert({
     where: { id: "author-editor" }, update: {},
     create: { id: "author-editor", navn: "Rikke Redaktør", forfatterType: "Fast", instansId: instance.id },
@@ -106,7 +121,7 @@ async function main() {
       forfatterId: editorAuthor.id, instansId: instance.id,
     },
   });
-  await db.article.upsert({
+  const sponsoredDraft = await db.article.upsert({
     where: { slug: "sponsoreret-kladde-uden-maerkning" },
     update: {},
     create: {
@@ -115,6 +130,20 @@ async function main() {
       blocks: [{ id: "demo-sponsored", type: "paragraph", data: { content: "<p>Denne kladde bruges til at afprøve AC-01.</p>" } }],
       status: "Godkendelse", indholdstype: "Sponsoreret", aiBrug: ["Ingen"],
       breaking: true, kategoriId: news.id, forfatterId: journalistAuthor.id, instansId: instance.id,
+    },
+  });
+  const editorUser = await db.user.findUniqueOrThrow({ where: { email: "redaktoer@slagelse.test" } });
+  await db.assignment.upsert({
+    where: { id: "assignment-demo" },
+    update: {},
+    create: {
+      id: "assignment-demo", titel: "Gør sponsoreret demoartikel klar",
+      beskrivelse: "Gennemgå research, mærkning og metadata, og aflever artiklen til redaktionel godkendelse.",
+      leverancetype: "Standardartikel", status: "Afleveret", iPulje: false,
+      researchDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      afleveringsDeadline: new Date(Date.now() + 48 * 60 * 60 * 1000),
+      estimeretHonorar: 800, interessekonflikt: "Ingen", instansId: instance.id,
+      assignedAuthorId: journalistAuthor.id, articleId: sponsoredDraft.id, createdById: editorUser.id,
     },
   });
 }

@@ -1,6 +1,6 @@
 # Lysdals CMS
 
-Et generisk, AI-understøttet redaktionelt CMS. Den aktuelle leverance indeholder artikelmodel, konfigurerbar instans, credentials-login, databasebaseret RBAC, redaktionelt workflow, blokeditor, publiceringsoversigt, mediebibliotek og et offentligt læse-API.
+Et generisk, AI-understøttet redaktionelt CMS. Den aktuelle leverance indeholder artikelmodel, konfigurerbar instans, credentials-login, databasebaseret RBAC, redaktionelt workflow, blokeditor, publiceringsoversigt, mediebibliotek, opgave-/honorarstyring og et offentligt læse-API.
 
 ## Lokal opsætning
 
@@ -65,6 +65,19 @@ Begge endpoints returnerer udelukkende artikler med status `Publiceret`. Udkast,
 
 Lokal upload gemmes under `public/uploads` og er en udviklingsadapter. Produktionsdrift bør koble samme mediemodel til S3/R2 eller tilsvarende persistent objektlager; uploadede filer er derfor ikke versionsstyret.
 
+## Opgaver og honorarer
+
+`/opgaver` understøtter den redaktionelle kæde fra brief til godkendt leverance:
+
+- Direkte tildeling eller åben opgavepulje.
+- Research- og afleveringsdeadline med tydelig 48-timers-/overskredet markering.
+- Konfigurerbar leverancetype og vejledende honorarinterval pr. instans.
+- Kobling til artikel og valgfri støtteaftale.
+- Obligatorisk interessekonflikterklæring ved aflevering.
+- Journalistens eget opgave-/honorarview og ledelsens samlede overblik.
+
+Ved første publicering af en koblet freelanceopgave godkendes opgaven og oprettes en unik honorarpost i samme databasetransaktion. `/honorar` håndterer godkendelse, og `GET /api/honorar/export` leverer semikolonsepareret UTF-8 CSV til bogføring.
+
 ## Arkitektur
 
 - Next.js 16 App Router, React 19 og TypeScript
@@ -73,4 +86,4 @@ Lokal upload gemmes under `public/uploads` og er en udviklingsadapter. Produktio
 - Zod-validerede strukturerede artikelblokke
 - Modernist-designsystem med Archivo, firkantede flader og designsystemets komponentklasser
 
-Den aktuelle afgrænsning er CMS-fundamentet plus første version af CMS-03. Opgave- og honorarmodul, indsendelser, kalender, Signals/Topics, AI-lag, supporterdashboard, produktions-storage og offentlig frontend er roadmap.
+Den aktuelle afgrænsning er CMS-fundamentet plus CMS-03 og CMS-06 v1. E-mail/push-påmindelser, indsendelser, kalender, Signals/Topics, AI-lag, supporterdashboard, produktions-storage og offentlig frontend er roadmap.

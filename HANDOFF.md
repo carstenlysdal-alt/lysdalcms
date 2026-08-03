@@ -1,10 +1,30 @@
 # HANDOFF — Lysdals CMS fundament
 
-> **Status:** Fundamentet og CMS-03 mediebibliotek v1 er implementeret. Næste session kan starte på næste roadmap-modul eller visuel/manual QA.
+> **Status:** Fundamentet, CMS-03 mediebibliotek v1 og CMS-06 opgave-/honorarmodul v1 er implementeret.
 > **Dato:** 2026-08-03. **Repo:** `/Users/Lysdal/GITS/Local2027/cms/` (Next.js 16, nystartet).
 
 Denne fil er overleveringsloggen. Læs den FØR du bygger videre — den indeholder
 alle beslutninger, Next 16-faldgruber, præcis hvad der er gjort, og de næste trin.
+
+## Arbejdslog — CMS-06 opgaver og honorarer v1, 2026-08-03
+
+- `Assignment`, `HonorRate` og `HonorEntry` tilføjet som instansafgrænsede modeller med én-til-én-kobling mellem opgave, artikel og honorarpost.
+- `/opgaver`: søgning, statusfilter, direkte tildeling, opgavepulje, research-/afleveringsdeadline, artikel-/støtteaftalekobling og estimeret honorar.
+- Journalister kan tage puljeopgaver og flytte egne opgaver fra Tildelt → I gang → Afleveret. Aflevering kræver eksplicit interessekonflikterklæring.
+- Redaktionel ledelse kan administrere opgaver, returnere afleveringer og godkende/annullere. Deadlinevisningen markerer ≤48 timer og overskridelser.
+- Konfigurerbar prisliste seedet fra kravspecifikationen med minimum, maksimum og standardbeløb.
+- Artikelpublicering og honorarpostering kører atomisk: en koblet freelanceopgave godkendes og får præcis én honorarpost via unik constraint/upsert.
+- `/honorar`: samlet ledelsesview, journalistens egne honorarer, godkendelseshandling og bogføringsklar semikolonsepareret UTF-8 CSV.
+- Runtime-verificeret med redaktør og journalist: publicering → opgave Godkendt → 800 kr. Afventer → Godkendt → CSV.
+- Testsuiten er udvidet til 11 tests med opgavevalidering, roller, transitions, deadlines og honorarberegning.
+
+### Næste anbefalede arbejde efter CMS-06 v1
+
+1. CMS-07 offentlig indsendelsesformular og redaktionel indbakke.
+2. Notifikationskanal til automatiske 48/12-timers deadlinepåmindelser (UI-advarsler er med; e-mail/push er ikke).
+3. Månedlig fakturakørsel med eksportbatch-ID og bogføringsintegration.
+
+---
 
 ## Arbejdslog — CMS-03 mediebibliotek v1, 2026-08-03
 

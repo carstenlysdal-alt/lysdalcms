@@ -39,6 +39,9 @@ model Instance {
   media             Media[]
   organizations     Organization[]
   supportAgreements SupportAgreement[]
+  assignments        Assignment[]
+  honorRates         HonorRate[]
+  honorEntries       HonorEntry[]
 }
 
 // ── CMS-05: konfigurerbare roller (rettigheder som data, ikke hardkodet) ────
@@ -66,6 +69,8 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   articleRevisions ArticleRevision[]
+  createdAssignments Assignment[] @relation("AssignmentCreator")
+  approvedHonorEntries HonorEntry[] @relation("HonorApprover")
 }
 
 model Author {
@@ -79,6 +84,8 @@ model Author {
   instans     Instance  @relation(fields: [instansId], references: [id])
   user        User?
   articles    Article[]
+  assignments Assignment[]
+  honorEntries HonorEntry[]
   createdAt   DateTime  @default(now())
 }
 
@@ -157,6 +164,8 @@ model Article {
   coverMedia   Media? @relation("ArticleCover", fields: [coverMediaId], references: [id])
 
   revisions ArticleRevision[]
+  assignment Assignment?
+  honorEntry HonorEntry?
 
   @@index([instansId, status])
   @@index([instansId, indholdstype])
@@ -217,6 +226,7 @@ model SupportAgreement {
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
   articles       Article[]
+  assignments    Assignment[]
   createdAt      DateTime  @default(now())
 }
 
@@ -229,4 +239,73 @@ model Organization {
   instans   Instance  @relation(fields: [instansId], references: [id])
   supportAgreements SupportAgreement[]
   createdAt DateTime  @default(now())
+}
+
+// ── CMS-06: opgaver, prisliste og honorarer ───────────────────────────────
+model Assignment {
+  id                  String   @id @default(cuid())
+  titel               String
+  beskrivelse         String
+  leverancetype       String
+  status              String   @default("Åben") // Åben|Tildelt|I gang|Afleveret|Godkendt|Annulleret
+  iPulje              Boolean  @default(false)
+  researchDeadline    DateTime?
+  afleveringsDeadline DateTime
+  estimeretHonorar    Int
+  interessekonflikt   String?
+  konfliktGennemgaaet Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  instansId String
+  instans   Instance @relation(fields: [instansId], references: [id])
+  assignedAuthorId String?
+  assignedAuthor   Author? @relation(fields: [assignedAuthorId], references: [id])
+  articleId String? @unique
+  article   Article? @relation(fields: [articleId], references: [id])
+  supportAgreementId String?
+  supportAgreement   SupportAgreement? @relation(fields: [supportAgreementId], references: [id])
+  createdById String
+  createdBy   User @relation("AssignmentCreator", fields: [createdById], references: [id])
+  honorEntry HonorEntry?
+
+  @@index([instansId, status])
+  @@index([assignedAuthorId, afleveringsDeadline])
+}
+
+model HonorRate {
+  id            String   @id @default(cuid())
+  leverancetype String
+  minimum       Int
+  maksimum      Int
+  standard      Int
+  aktiv         Boolean  @default(true)
+  instansId     String
+  instans       Instance @relation(fields: [instansId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([instansId, leverancetype])
+}
+
+model HonorEntry {
+  id           String   @id @default(cuid())
+  beloeb       Int
+  status       String   @default("Afventer") // Afventer|Godkendt|Eksporteret
+  generatedAt  DateTime @default(now())
+  approvedAt   DateTime?
+  exportedAt   DateTime?
+  instansId    String
+  instans      Instance @relation(fields: [instansId], references: [id])
+  assignmentId String   @unique
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  authorId     String
+  author       Author @relation(fields: [authorId], references: [id])
+  articleId    String   @unique
+  article      Article @relation(fields: [articleId], references: [id])
+  approvedById String?
+  approvedBy   User? @relation("HonorApprover", fields: [approvedById], references: [id])
+
+  @@index([instansId, status])
+  @@index([authorId, generatedAt])
 }

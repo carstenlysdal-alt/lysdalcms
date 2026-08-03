@@ -10,6 +10,7 @@ import { db } from "@/lib/db";
 import { assertPublishableMarking, CONTENT_TYPES } from "@/lib/marking";
 import { can, canEditArticle, PERMISSIONS } from "@/lib/permissions";
 import { canTransition, isArticleStatus } from "@/lib/workflow";
+import { honorAmountForAssignment } from "@/lib/assignments";
 
 export type ArticleFormState = { error?: string; success?: string; fieldErrors?: Record<string, string[]> };
 
@@ -99,7 +100,27 @@ export async function saveArticle(articleId: string | null, _: ArticleFormState,
 
   try {
     let article;
-    if (current) {
+    if (current && nextStatus === "Publiceret") {
+      article = await db.$transaction(async (tx) => {
+        const published = await tx.article.update({ where: { id: current.id }, data });
+        const assignment = await tx.assignment.findUnique({ where: { articleId: published.id }, include: { assignedAuthor: { select: { forfatterType: true } } } });
+        if (assignment?.assignedAuthorId) {
+          await tx.assignment.update({ where: { id: assignment.id }, data: { status: "Godkendt", konfliktGennemgaaet: true } });
+          if (assignment.assignedAuthor?.forfatterType === "Freelance") await tx.honorEntry.upsert({
+            where: { assignmentId: assignment.id },
+            update: {},
+            create: {
+              beloeb: honorAmountForAssignment(assignment), instansId: session.user.instansId,
+              assignmentId: assignment.id, authorId: assignment.assignedAuthorId, articleId: published.id,
+            },
+          });
+        }
+        await tx.articleRevision.create({
+          data: { articleId: published.id, userId: session.user.id, snapshot: JSON.parse(JSON.stringify(published)) as Prisma.InputJsonValue, note: "Publiceret" },
+        });
+        return published;
+      });
+    } else if (current) {
       article = await db.article.update({ where: { id: current.id }, data });
     } else {
       const { tags: relationTags, geoTags: relationGeoTags, ...createData } = data;
@@ -111,11 +132,6 @@ export async function saveArticle(articleId: string | null, _: ArticleFormState,
         tags: { connect: tagIds.map((id) => ({ id })) },
         geoTags: { connect: geoTagIds.map((id) => ({ id })) },
       } });
-    }
-    if (nextStatus === "Publiceret") {
-      await db.articleRevision.create({
-        data: { articleId: article.id, userId: session.user.id, snapshot: JSON.parse(JSON.stringify(article)) as Prisma.InputJsonValue, note: current?.status === "Publiceret" ? "Opdateret publicering" : "Publiceret" },
-      });
     }
     revalidatePath("/artikler");
     revalidatePath(`/artikler/${article.id}`);
