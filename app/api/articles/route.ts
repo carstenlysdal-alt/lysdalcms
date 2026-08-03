@@ -12,6 +12,7 @@ export async function GET(request: Request) {
       indholdstype: true, marking: true, pinned: true, breaking: true,
       seoTitel: true, seoBeskrivelse: true, sprog: true, publiceretTid: true, opdateretTid: true,
       kategori: { select: { navn: true, slug: true } },
+      coverMedia: { select: { id: true, url: true, altTekst: true, billedtekst: true, ophavsperson: true } },
       forfatter: { select: { navn: true, bio: true, profilbilledeUrl: true } },
       tags: { select: { navn: true } }, geoTags: { select: { navn: true } },
     },

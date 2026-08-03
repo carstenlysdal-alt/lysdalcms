@@ -1,10 +1,31 @@
 # HANDOFF — Lysdals CMS fundament
 
-> **Status:** Fundamentet er implementeret og build-verificeret. Næste session kan starte på roadmap-moduler eller visuel/manual QA.
+> **Status:** Fundamentet og CMS-03 mediebibliotek v1 er implementeret. Næste session kan starte på næste roadmap-modul eller visuel/manual QA.
 > **Dato:** 2026-08-03. **Repo:** `/Users/Lysdal/GITS/Local2027/cms/` (Next.js 16, nystartet).
 
 Denne fil er overleveringsloggen. Læs den FØR du bygger videre — den indeholder
 alle beslutninger, Next 16-faldgruber, præcis hvad der er gjort, og de næste trin.
+
+## Arbejdslog — CMS-03 mediebibliotek v1, 2026-08-03
+
+- `Media` udvidet med filnavn, MIME-type, størrelse, dimensioner, licens, rettighedsudløb, kildetype og opdateringstid.
+- `Article.coverMedia` tilføjet som relation; cover returneres i det offentlige læse-API.
+- Centralt `/medier`-bibliotek med søgning, typefilter, preview, metadataredigering samt rettighedsstyring.
+- Sikker upload på maks. 10 MB. JPG/PNG/WebP valideres med Sharp, auto-orienteres, nedskaleres til maks. 2400×2400 og gemmes som WebP.
+- Eksterne billeder, videoer, lydfiler og dokumenter kan registreres via URL.
+- Billedblokke vælger nu genbrugelige medier fra biblioteket; rå URL er fortsat mulig. Artikel-editoren har covervælger.
+- Billeder blokeres uden alt-tekst og billedtekst. Lokale uploads ignoreres af Git og bruger `public/uploads` som dev-adapter.
+- Multi-instance-hærdning: kategori, forfatter, tags, geotags og covermedie valideres mod brugerens instans ved artikellagring.
+- Automatiske Node-tests tilføjet for AC-01, publiceringsret, blok-URL'er, billedmetadata, rettighedsdato og reel WebP-optimering.
+- Direkte Sharp-afhængighed er opgraderet til 0.35.3. `npm audit --omit=dev` rapporterer fortsat tre high-advisories i **Next 16.2.12's egne indlejrede** PostCSS/Sharp-versioner; npm's foreslåede force-fix vil fejlagtigt nedgradere til Next 9.3.3 og må ikke bruges. Opgradér Next, når en stabil rettet version efter 16.2.12 er tilgængelig, og genkør audit.
+
+### Næste anbefalede arbejde efter CMS-03 v1
+
+1. Manuel browser-QA af upload, medievælger og responsive layouts.
+2. Produktions-storage-adapter til S3/R2 med signed uploads og oprydning af ubrugte filer.
+3. Fortsæt med CMS-06 opgave-/honorarmodul eller CMS-07 indsendt materiale.
+
+---
 
 ## Seneste arbejdslog — 2026-08-03
 

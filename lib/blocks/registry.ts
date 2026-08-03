@@ -9,6 +9,6 @@ export const blockRegistry: Record<BlockType, RegistryItem> = {
   manchet: { label: "Manchet", create: (id) => ({ id, type: "manchet", data: { text: "" } }) },
   quote: { label: "Citat", create: (id) => ({ id, type: "quote", data: { quote: "", attribution: "" } }) },
   factbox: { label: "Faktaboks", create: (id) => ({ id, type: "factbox", data: { title: "Fakta", content: "" } }) },
-  image: { label: "Billede", create: (id) => ({ id, type: "image", data: { url: "https://", alt: "", caption: "" } }) },
+  image: { label: "Billede", create: (id) => ({ id, type: "image", data: { mediaId: "", url: "https://", alt: "", caption: "" } }) },
   infobox: { label: "Infoboks", create: (id) => ({ id, type: "infobox", data: { title: "", content: "" } }) },
 };

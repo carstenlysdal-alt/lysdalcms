@@ -1,6 +1,6 @@
 # Lysdals CMS
 
-Fundamentet til et generisk, AI-understøttet redaktionelt CMS. Denne leverance indeholder artikelmodel, konfigurerbar instans, credentials-login, databasebaseret RBAC, redaktionelt workflow, blokeditor, publiceringsoversigt og et offentligt læse-API.
+Et generisk, AI-understøttet redaktionelt CMS. Den aktuelle leverance indeholder artikelmodel, konfigurerbar instans, credentials-login, databasebaseret RBAC, redaktionelt workflow, blokeditor, publiceringsoversigt, mediebibliotek og et offentligt læse-API.
 
 ## Lokal opsætning
 
@@ -29,6 +29,7 @@ Skift demo-adgangskoder og `AUTH_SECRET` før enhver delt eller produktionsligne
 npm run dev        # udviklingsserver
 npm run build      # produktionsbuild + typekontrol
 npm run lint       # ESLint
+npm test           # governance-, blok- og medietests
 npm run db:push    # synkronisér Prisma-schema til dev-databasen
 npm run seed       # idempotent referenceinstans og demo-data
 npm run db:studio  # Prisma Studio
@@ -52,6 +53,18 @@ Seedet indeholder en sponsoreret artikel i `Godkendelse` uden mærkning, så AC-
 
 Begge endpoints returnerer udelukkende artikler med status `Publiceret`. Udkast, godkendelsesartikler og arkiveret indhold eksponeres ikke.
 
+## Mediebibliotek
+
+`/medier` er det centrale bibliotek for billeder, video, lyd og dokumenter:
+
+- Lokal upload op til 10 MB eller registrering af en ekstern URL.
+- JPG, PNG og WebP orienteres, skaleres til maksimalt 2400×2400 og gemmes som WebP.
+- Billeder kræver alt-tekst og billedtekst.
+- Ophavsperson, licens, rettighedsstatus og eventuel udløbsdato registreres som metadata.
+- Billeder kan genbruges som artikelcover og i editorens billedblokke.
+
+Lokal upload gemmes under `public/uploads` og er en udviklingsadapter. Produktionsdrift bør koble samme mediemodel til S3/R2 eller tilsvarende persistent objektlager; uploadede filer er derfor ikke versionsstyret.
+
 ## Arkitektur
 
 - Next.js 16 App Router, React 19 og TypeScript
@@ -60,4 +73,4 @@ Begge endpoints returnerer udelukkende artikler med status `Publiceret`. Udkast,
 - Zod-validerede strukturerede artikelblokke
 - Modernist-designsystem med Archivo, firkantede flader og designsystemets komponentklasser
 
-Den aktuelle afgrænsning er CMS-fundamentet. Mediebibliotek/pipeline, opgave- og honorarmodul, indsendelser, kalender, Signals/Topics, AI-lag, supporterdashboard og offentlig frontend er roadmap.
+Den aktuelle afgrænsning er CMS-fundamentet plus første version af CMS-03. Opgave- og honorarmodul, indsendelser, kalender, Signals/Topics, AI-lag, supporterdashboard, produktions-storage og offentlig frontend er roadmap.

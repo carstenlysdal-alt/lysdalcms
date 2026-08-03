@@ -11,11 +11,13 @@ type ArticleValue = {
   id: string | null; titel: string; manchet: string; slug: string; blocks: Block[]; status: string;
   indholdstype: string; aiBrug: string[]; marking: { sponsor?: string; labelTekst?: string } | null;
   pinned: boolean; breaking: boolean; seoTitel: string; seoBeskrivelse: string; sprog: string;
-  kategoriId: string; forfatterId: string; tagIds: string[]; geoTagIds: string[];
+  kategoriId: string; forfatterId: string; coverMediaId: string; tagIds: string[]; geoTagIds: string[];
 };
 
-export function ArticleForm({ article, categories, authors, tags, geoTags, transitions, canPublish }: {
-  article: ArticleValue; categories: Option[]; authors: Option[]; tags: Option[]; geoTags: Option[]; transitions: string[]; canPublish: boolean;
+type MediaOption = { id: string; url: string; altTekst: string | null; billedtekst: string | null; filnavn: string | null };
+
+export function ArticleForm({ article, categories, authors, tags, geoTags, media, transitions, canPublish }: {
+  article: ArticleValue; categories: Option[]; authors: Option[]; tags: Option[]; geoTags: Option[]; media: MediaOption[]; transitions: string[]; canPublish: boolean;
 }) {
   const action = saveArticle.bind(null, article.id);
   const [state, formAction, pending] = useActionState<ArticleFormState, FormData>(action, {});
@@ -29,7 +31,7 @@ export function ArticleForm({ article, categories, authors, tags, geoTags, trans
         <div className="field"><label htmlFor="titel">Titel</label><input className="input title-input" id="titel" name="titel" defaultValue={article.titel} required />{state.fieldErrors?.titel?.map((error) => <p className="error-text" key={error}>{error}</p>)}</div>
         <div className="field"><label htmlFor="manchet">Manchet</label><textarea className="input" id="manchet" name="manchet" defaultValue={article.manchet} rows={3} /></div>
         <div className="editor-label">Indhold</div>
-        <BlockEditor initialBlocks={article.blocks} />
+        <BlockEditor initialBlocks={article.blocks} media={media} />
       </div>
       <aside className="editor-sidebar">
         <div className="sidebar-actions"><button className="btn btn-secondary" disabled={pending}><Save size={16} /> {pending ? "Gemmer…" : "Gem"}</button>
@@ -39,6 +41,7 @@ export function ArticleForm({ article, categories, authors, tags, geoTags, trans
         <section className="sidebar-section"><h2>Organisering</h2>
           <div className="field"><label htmlFor="kategoriId">Kategori</label><select className="input" id="kategoriId" name="kategoriId" defaultValue={article.kategoriId}><option value="">Vælg kategori</option>{categories.map((item) => <option key={item.id} value={item.id}>{item.navn}</option>)}</select></div>
           <div className="field"><label htmlFor="forfatterId">Forfatter</label><select className="input" id="forfatterId" name="forfatterId" defaultValue={article.forfatterId}><option value="">Vælg forfatter</option>{authors.map((item) => <option key={item.id} value={item.id}>{item.navn}</option>)}</select></div>
+          <div className="field"><label htmlFor="coverMediaId">Coverbillede</label><select className="input" id="coverMediaId" name="coverMediaId" defaultValue={article.coverMediaId}><option value="">Intet coverbillede</option>{media.map((item) => <option key={item.id} value={item.id}>{item.billedtekst || item.filnavn || item.id}</option>)}</select></div>
           <fieldset className="field checkbox-grid"><legend>Tags</legend>{tags.map((item) => <label key={item.id}><input type="checkbox" name="tagIds" value={item.id} defaultChecked={article.tagIds.includes(item.id)} /> {item.navn}</label>)}</fieldset>
           <fieldset className="field checkbox-grid"><legend>Geografi</legend>{geoTags.map((item) => <label key={item.id}><input type="checkbox" name="geoTagIds" value={item.id} defaultChecked={article.geoTagIds.includes(item.id)} /> {item.navn}</label>)}</fieldset>
         </section>

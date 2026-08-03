@@ -17,7 +17,9 @@ function ParagraphEditor({ value, onChange }: { value: string; onChange: (value:
   return <EditorContent editor={editor} className="block-prose input" />;
 }
 
-export function BlockEditor({ initialBlocks, inputName = "blocks" }: { initialBlocks: Block[]; inputName?: string }) {
+type MediaOption = { id: string; url: string; altTekst: string | null; billedtekst: string | null; filnavn: string | null };
+
+export function BlockEditor({ initialBlocks, media = [], inputName = "blocks" }: { initialBlocks: Block[]; media?: MediaOption[]; inputName?: string }) {
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
   const [newType, setNewType] = useState<BlockType>("paragraph");
 
@@ -54,7 +56,21 @@ export function BlockEditor({ initialBlocks, inputName = "blocks" }: { initialBl
           )}
           {block.type === "quote" && <><textarea className="input" value={block.data.quote} onChange={(event) => update(index, { ...block.data, quote: event.target.value })} /><input className="input" placeholder="Kilde" value={block.data.attribution ?? ""} onChange={(event) => update(index, { ...block.data, attribution: event.target.value })} /></>}
           {(block.type === "factbox" || block.type === "infobox") && <><input className="input" value={block.data.title} onChange={(event) => update(index, { ...block.data, title: event.target.value })} /><textarea className="input" value={block.data.content} onChange={(event) => update(index, { ...block.data, content: event.target.value })} /></>}
-          {block.type === "image" && <><input className="input" type="url" value={block.data.url} onChange={(event) => update(index, { ...block.data, url: event.target.value })} /><input className="input" placeholder="Alt-tekst" value={block.data.alt} onChange={(event) => update(index, { ...block.data, alt: event.target.value })} /><input className="input" placeholder="Billedtekst" value={block.data.caption ?? ""} onChange={(event) => update(index, { ...block.data, caption: event.target.value })} /></>}
+          {block.type === "image" && <>
+            <select className="input" value={block.data.mediaId ?? ""} onChange={(event) => {
+              const selected = media.find((item) => item.id === event.target.value);
+              if (selected) update(index, { mediaId: selected.id, url: selected.url, alt: selected.altTekst ?? "", caption: selected.billedtekst ?? "" });
+              else update(index, { ...block.data, mediaId: "" });
+            }}><option value="">Vælg fra mediebiblioteket</option>{media.map((item) => <option key={item.id} value={item.id}>{item.billedtekst || item.filnavn || item.id}</option>)}</select>
+            {block.data.url && block.data.url !== "https://" && <div className="editor-image-preview">
+              {/* Media hosts are selected dynamically from the CMS library. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={block.data.url} alt="" />
+            </div>}
+            <div className="field"><label>URL</label><input className="input" value={block.data.url} onChange={(event) => update(index, { ...block.data, mediaId: "", url: event.target.value })} /></div>
+            <div className="field"><label>Alt-tekst</label><input className="input" value={block.data.alt} onChange={(event) => update(index, { ...block.data, alt: event.target.value })} /></div>
+            <div className="field"><label>Billedtekst</label><input className="input" value={block.data.caption ?? ""} onChange={(event) => update(index, { ...block.data, caption: event.target.value })} /></div>
+          </>}
         </section>
       ))}
       <div className="flex gap-2">

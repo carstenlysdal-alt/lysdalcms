@@ -20,6 +20,7 @@ const articleSchema = z.object({
   indholdstype: z.enum(CONTENT_TYPES),
   kategoriId: z.string().optional(),
   forfatterId: z.string().optional(),
+  coverMediaId: z.string().optional(),
   seoTitel: z.string().trim().optional(),
   seoBeskrivelse: z.string().trim().optional(),
   sprog: z.string().trim().min(2),
@@ -64,11 +65,25 @@ export async function saveArticle(articleId: string | null, _: ArticleFormState,
 
   const tagIds = formData.getAll("tagIds").filter((v): v is string => typeof v === "string");
   const geoTagIds = formData.getAll("geoTagIds").filter((v): v is string => typeof v === "string");
+  const requestedAuthorId = values.data.forfatterId || session.user.authorId;
+  const requestedCategoryId = values.data.kategoriId || null;
+  const requestedCoverMediaId = values.data.coverMediaId || null;
+  const [categoryCount, authorCount, coverCount, tagCount, geoTagCount] = await Promise.all([
+    requestedCategoryId ? db.category.count({ where: { id: requestedCategoryId, instansId: session.user.instansId } }) : 1,
+    requestedAuthorId ? db.author.count({ where: { id: requestedAuthorId, instansId: session.user.instansId } }) : 1,
+    requestedCoverMediaId ? db.media.count({ where: { id: requestedCoverMediaId, instansId: session.user.instansId, filtype: "billede" } }) : 1,
+    db.tag.count({ where: { id: { in: tagIds }, instansId: session.user.instansId } }),
+    db.geoTag.count({ where: { id: { in: geoTagIds }, instansId: session.user.instansId } }),
+  ]);
+  if (!categoryCount || !authorCount || !coverCount || tagCount !== new Set(tagIds).size || geoTagCount !== new Set(geoTagIds).size) {
+    return { error: "En valgt kategori, forfatter, tag, geografi eller mediefil tilhører ikke denne CMS-instans." };
+  }
   const data = {
     ...values.data,
     manchet: values.data.manchet || null,
-    kategoriId: values.data.kategoriId || null,
-    forfatterId: values.data.forfatterId || session.user.authorId,
+    kategoriId: requestedCategoryId,
+    forfatterId: requestedAuthorId,
+    coverMediaId: requestedCoverMediaId,
     seoTitel: values.data.seoTitel || null,
     seoBeskrivelse: values.data.seoBeskrivelse || null,
     blocks: blocks.data as Prisma.InputJsonValue,

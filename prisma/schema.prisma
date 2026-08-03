@@ -153,6 +153,8 @@ model Article {
   geoTags    GeoTag[]
   supportAftaleId String?
   supportAftale   SupportAgreement? @relation(fields: [supportAftaleId], references: [id])
+  coverMediaId String?
+  coverMedia   Media? @relation("ArticleCover", fields: [coverMediaId], references: [id])
 
   revisions ArticleRevision[]
 
@@ -178,13 +180,25 @@ model Media {
   id            String   @id @default(cuid())
   filtype       String   // billede | video | lyd | dokument
   url           String
+  filnavn       String?
+  mimeType      String?
+  stoerrelse    Int?
+  bredde        Int?
+  hoejde        Int?
   altTekst      String?  // kan AI-udkastes, kræver godkendelse (spec 2.3)
   billedtekst   String?
   ophavsperson  String?  // fotograf/ophavsret
   rettighedsstatus String? // kobler til CMS-08 (roadmap)
+  licensType    String?
+  rettighedsUdlob DateTime?
+  kildeType     String   @default("Ekstern") // Lokal | Ekstern
   instansId     String
   instans       Instance @relation(fields: [instansId], references: [id])
+  coverForArticles Article[] @relation("ArticleCover")
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([instansId, filtype])
 }
 
 // ── CMS-04: støtteaftaler (kvote-træk + dashboard er roadmap; datamodel nu) ─
