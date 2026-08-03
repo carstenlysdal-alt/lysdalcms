@@ -6,6 +6,13 @@
 Denne fil er overleveringsloggen. Læs den FØR du bygger videre — den indeholder
 alle beslutninger, Next 16-faldgruber, præcis hvad der er gjort, og de næste trin.
 
+## Driftslog — lokal ejerbruger, 2026-08-03
+
+- Lokal ejerbruger `carstenlysdal@gmail.com` er oprettet/opdateret i SQLite-databasen som `Carsten Lysdal`.
+- Brugeren er knyttet til rollen `Ansvarshavende redaktør` og en fast forfatterprofil.
+- Login og password-hash er verificeret. Kodeordet er bevidst ikke gemt i Git eller denne handoff.
+- Ændringen er lokal driftsdata og overlever ikke en sletning eller ny seedning af `prisma/dev.db`.
+
 ## Arbejdslog — CMS-06 opgaver og honorarer v1, 2026-08-03
 
 - `Assignment`, `HonorRate` og `HonorEntry` tilføjet som instansafgrænsede modeller med én-til-én-kobling mellem opgave, artikel og honorarpost.
