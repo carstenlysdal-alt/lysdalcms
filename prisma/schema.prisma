@@ -1,0 +1,218 @@
+// Lysdals CMS — data model (MVP-critical entities from spec del 3, afsnit 5.1)
+//
+// Cross-provider notes: enums are modelled as String (validated via TS unions +
+// zod in lib/) and lists as Json/relations so the schema runs unchanged on both
+// SQLite (dev) and PostgreSQL (prod). To go to Postgres: switch the provider
+// below and set a postgres DATABASE_URL — no model changes required.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── CMS-11: konfigurerbar instans (alt hvad der gør én instans unik = data) ─
+model Instance {
+  id             String   @id @default(cuid())
+  navn           String
+  domaene        String
+  logoUrl        String?
+  farver         Json?    // { accent, bg, text, … } — redigerbart uden kode
+  typografi      Json?    // { heading, body }
+  // Konfigurerbare lister (jf. spec 2.11) — IKKE hardkodet i kernen.
+  geografiskDækning Json  // string[] af delområder
+  kategoriTaksonomi Json  // string[] af topkategorier
+  sprog          String   @default("da")
+  markingTekster Json     // { sponsorLabel, partnerLabel, principperUrl, … }
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  users             User[]
+  authors           Author[]
+  categories        Category[]
+  tags              Tag[]
+  geoTags           GeoTag[]
+  articles          Article[]
+  media             Media[]
+  organizations     Organization[]
+  supportAgreements SupportAgreement[]
+}
+
+// ── CMS-05: konfigurerbare roller (rettigheder som data, ikke hardkodet) ────
+model Role {
+  id          String   @id @default(cuid())
+  navn        String   @unique // fx "Ansvarshavende redaktør"
+  permissions Json     // string[] — se PERMISSIONS i lib/permissions.ts
+  description String?
+  users       User[]
+  createdAt   DateTime @default(now())
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  navn         String
+  roleId       String
+  role         Role      @relation(fields: [roleId], references: [id])
+  instansId    String
+  instans      Instance  @relation(fields: [instansId], references: [id])
+  authorId     String?   @unique // kobling til Forfatter-profil, hvis redaktionel
+  author       Author?   @relation(fields: [authorId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  articleRevisions ArticleRevision[]
+}
+
+model Author {
+  id          String    @id @default(cuid())
+  navn        String
+  forfatterType String  @default("Freelance") // Fast | Freelance
+  bio         String?
+  profilbilledeUrl String?
+  kontakt     String?
+  instansId   String
+  instans     Instance  @relation(fields: [instansId], references: [id])
+  user        User?
+  articles    Article[]
+  createdAt   DateTime  @default(now())
+}
+
+// ── CMS-02: taksonomi ───────────────────────────────────────────────────────
+model Category {
+  id        String    @id @default(cuid())
+  navn      String
+  slug      String
+  instansId String
+  instans   Instance  @relation(fields: [instansId], references: [id])
+  articles  Article[]
+  createdAt DateTime  @default(now())
+
+  @@unique([instansId, slug])
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  navn      String
+  instansId String
+  instans   Instance  @relation(fields: [instansId], references: [id])
+  articles  Article[]
+  createdAt DateTime  @default(now())
+
+  @@unique([instansId, navn])
+}
+
+model GeoTag {
+  id        String   @id @default(cuid())
+  navn      String   // delområde
+  instansId String
+  instans   Instance @relation(fields: [instansId], references: [id])
+  articles  Article[]
+  createdAt DateTime @default(now())
+
+  @@unique([instansId, navn])
+}
+
+// ── CMS-01: artikel ─────────────────────────────────────────────────────────
+model Article {
+  id            String    @id @default(cuid())
+  titel         String
+  manchet       String?
+  slug          String    @unique
+  // Blokeditor: body som struktureret komponentliste (jf. spec 4.1), ikke fri HTML.
+  blocks        Json      // Block[] — se lib/blocks/schema.ts
+  // Status-workflow præcis som spec 5.2 (String + TS-union, valideres i lib/workflow.ts).
+  status        String    @default("Idé")
+  // indholdstype styrer mærkning (spec 5.2).
+  indholdstype  String    @default("Uafhængig") // Uafhængig|Partner|Sponsoreret|Brugerindsendt|PR
+  aiBrug        Json      // string[] — obligatorisk AI-brugsfelt ved publicering (spec 3.5)
+  // Mærkning for kommercielt indhold (AC-01): skal være udfyldt hvis indholdstype er kommerciel.
+  marking       Json?     // { sponsor, aftaleId?, labelTekst, … }
+  pinned        Boolean   @default(false)
+  breaking      Boolean   @default(false)
+  seoTitel      String?
+  seoBeskrivelse String?
+  sprog         String    @default("da")
+  publiceretTid DateTime?
+  opdateretTid  DateTime  @updatedAt
+  createdAt     DateTime  @default(now())
+
+  kategoriId String?
+  kategori   Category? @relation(fields: [kategoriId], references: [id])
+  forfatterId String?
+  forfatter   Author?   @relation(fields: [forfatterId], references: [id])
+  instansId   String
+  instans     Instance  @relation(fields: [instansId], references: [id])
+
+  // Mange-til-mange: tags, geotags, relaterede artikler.
+  tags       Tag[]
+  geoTags    GeoTag[]
+  supportAftaleId String?
+  supportAftale   SupportAgreement? @relation(fields: [supportAftaleId], references: [id])
+
+  revisions ArticleRevision[]
+
+  @@index([instansId, status])
+  @@index([instansId, indholdstype])
+}
+
+model ArticleRevision {
+  id         String   @id @default(cuid())
+  articleId  String
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  snapshot   Json     // fuld artikel-snapshot ved publicering/væsentlig rettelse
+  note       String?  // fx "Faktuel rettelse: …" (presseetisk, spec 2.1)
+  createdAt  DateTime @default(now())
+
+  @@index([articleId])
+}
+
+// ── CMS-03 (basalt): medie ──────────────────────────────────────────────────
+model Media {
+  id            String   @id @default(cuid())
+  filtype       String   // billede | video | lyd | dokument
+  url           String
+  altTekst      String?  // kan AI-udkastes, kræver godkendelse (spec 2.3)
+  billedtekst   String?
+  ophavsperson  String?  // fotograf/ophavsret
+  rettighedsstatus String? // kobler til CMS-08 (roadmap)
+  instansId     String
+  instans       Instance @relation(fields: [instansId], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+// ── CMS-04: støtteaftaler (kvote-træk + dashboard er roadmap; datamodel nu) ─
+model SupportAgreement {
+  id             String    @id @default(cuid())
+  organisationNavn String
+  pakkeNiveau    String    // Pakke 1 | Pakke 2 | Pakke 3
+  startDato      DateTime
+  slutDato       DateTime?
+  arligKvote     Int       @default(0)
+  forbrugtKvote  Int       @default(0) // afledt — opdateres ved publicering
+  kontaktperson  String?
+  pris           Int       @default(0)
+  instansId      String
+  instans        Instance  @relation(fields: [instansId], references: [id])
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  articles       Article[]
+  createdAt      DateTime  @default(now())
+}
+
+model Organization {
+  id        String    @id @default(cuid())
+  navn      String
+  branche   String?
+  kontakt   String?
+  instansId String
+  instans   Instance  @relation(fields: [instansId], references: [id])
+  supportAgreements SupportAgreement[]
+  createdAt DateTime  @default(now())
+}
