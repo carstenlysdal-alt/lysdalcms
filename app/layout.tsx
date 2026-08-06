@@ -1,19 +1,18 @@
 import type { Metadata } from "next";
-import { Schibsted_Grotesk, Playfair_Display, JetBrains_Mono } from "next/font/google";
+import { Inter, Outfit, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const schibsted = Schibsted_Grotesk({
+const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "900"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-const playfair = Playfair_Display({
+const outfit = Outfit({
   variable: "--font-serif",
   subsets: ["latin"],
-  weight: ["600", "700"],
-  style: ["normal", "italic"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -35,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="da" className={`${schibsted.variable} ${playfair.variable} ${jetbrains.variable} h-full antialiased`}>
+    <html lang="da" className={`${inter.variable} ${outfit.variable} ${jetbrains.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
       </body>

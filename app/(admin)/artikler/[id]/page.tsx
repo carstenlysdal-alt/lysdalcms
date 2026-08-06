@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { ArticleForm } from "@/components/editor/article-form";
+import { AiDock } from "@/components/editor/ai-dock";
 import { auth } from "@/lib/auth";
 import { parseBlocks } from "@/lib/blocks/schema";
 import { db } from "@/lib/db";
@@ -23,5 +24,15 @@ export default async function EditArticlePage({ params }: PageProps<"/artikler/[
   if (!article) notFound();
   if (!canEditArticle(session.user, article)) return <main className="admin-main"><div className="dialog inline-dialog"><h1 className="dialog-title">Ingen redigeringsadgang</h1><p className="dialog-body">Du kan kun redigere dine egne artikler.</p><Link className="btn btn-secondary" href="/artikler">Til oversigten</Link></div></main>;
   const marking = article.marking && typeof article.marking === "object" && !Array.isArray(article.marking) ? article.marking as { sponsor?: string; labelTekst?: string } : null;
-  return <main className="editor-page"><div className="editor-topbar"><Link href="/artikler" className="btn btn-ghost"><ChevronLeft size={16} /> Tilbage</Link><div><span className="eyebrow">{article.status}</span><h1>{article.titel}</h1></div></div><ArticleForm article={{ id: article.id, titel: article.titel, manchet: article.manchet ?? "", slug: article.slug, blocks: parseBlocks(article.blocks), status: article.status, indholdstype: article.indholdstype, aiBrug: Array.isArray(article.aiBrug) ? article.aiBrug.filter((item): item is string => typeof item === "string") : [], marking, pinned: article.pinned, breaking: article.breaking, seoTitel: article.seoTitel ?? "", seoBeskrivelse: article.seoBeskrivelse ?? "", sprog: article.sprog, kategoriId: article.kategoriId ?? "", forfatterId: article.forfatterId ?? "", coverMediaId: article.coverMediaId ?? "", tagIds: article.tags.map((tag) => tag.id), geoTagIds: article.geoTags.map((tag) => tag.id) }} categories={categories} authors={authors} tags={tags} geoTags={geoTags} media={media} transitions={availableTransitions(article.status, session.user)} canPublish={can(session.user, PERMISSIONS.ARTICLE_PUBLISH)} /></main>;
+  const chatSessionId = `artikel-${article.id}`;
+  const chatHistory = await db.chatMessage.findMany({
+    where: { sessionId: chatSessionId, instansId: session.user.instansId },
+    orderBy: { createdAt: "asc" },
+    take: 40,
+  });
+  return (
+    <AiDock sessionId={chatSessionId} initialMessages={chatHistory.map((m) => ({ role: m.role as "user" | "assistant", content: m.content }))}>
+      <main className="editor-page"><div className="editor-topbar"><Link href="/artikler" className="btn btn-ghost"><ChevronLeft size={16} /> Tilbage</Link><div><span className="eyebrow">{article.status}</span><h1>{article.titel}</h1></div></div><ArticleForm article={{ id: article.id, titel: article.titel, manchet: article.manchet ?? "", slug: article.slug, blocks: parseBlocks(article.blocks), status: article.status, indholdstype: article.indholdstype, aiBrug: Array.isArray(article.aiBrug) ? article.aiBrug.filter((item): item is string => typeof item === "string") : [], marking, pinned: article.pinned, breaking: article.breaking, seoTitel: article.seoTitel ?? "", seoBeskrivelse: article.seoBeskrivelse ?? "", sprog: article.sprog, kategoriId: article.kategoriId ?? "", forfatterId: article.forfatterId ?? "", coverMediaId: article.coverMediaId ?? "", tagIds: article.tags.map((tag) => tag.id), geoTagIds: article.geoTags.map((tag) => tag.id) }} categories={categories} authors={authors} tags={tags} geoTags={geoTags} media={media} transitions={availableTransitions(article.status, session.user)} canPublish={can(session.user, PERMISSIONS.ARTICLE_PUBLISH)} /></main>
+    </AiDock>
+  );
 }

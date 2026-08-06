@@ -5,11 +5,11 @@ import { toggleArticleFlag } from "@/app/(admin)/artikler/actions";
 
 type Row = Article & { forfatter: Author | null; coverMedia: Media | null };
 
-function statusClass(status: string) {
-  if (status === "Publiceret" || status === "Distribueret") return "dot-published";
-  if (status === "Planlagt") return "dot-scheduled";
-  if (status === "Arkiveret" || status === "Afvist") return "dot-archived";
-  return "dot-draft";
+function statusBadge(status: string) {
+  if (status === "Publiceret" || status === "Distribueret") return { cls: "badge-live", label: "Live" };
+  if (status === "Planlagt") return { cls: "badge-planned", label: "Planlagt" };
+  if (status === "Arkiveret" || status === "Afvist") return { cls: "badge-planned", label: status };
+  return { cls: "badge-planned", label: status };
 }
 
 function date(value: Date | null) {
@@ -44,86 +44,48 @@ const avatarStyle: React.CSSProperties = {
 export function ArticleTable({ articles, canManageFrontpage }: { articles: Row[]; canManageFrontpage: boolean }) {
   if (!articles.length) return <div className="empty-state">Ingen historier i denne sektion.</div>;
   return (
-    <div className="table-wrap">
-      <table className="table">
-        <thead>
-          <tr>
-            <th style={{ width: 48 }}><span className="sr-only">Billede</span></th>
-            <th>Titel</th>
-            <th>Status</th>
-            <th>Type</th>
-            <th style={{ width: 40 }}><span className="sr-only">Forfatter</span></th>
-            <th>Publiceret</th>
-            <th>Opdateret</th>
-            <th><span className="sr-only">Handlinger</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          {articles.map((article) => (
-            <tr key={article.id}>
-              <td style={{ padding: "6px 8px 6px 0" }}>
-                {article.coverMedia?.url ? (
-                  <img
-                    src={article.coverMedia.url}
-                    alt={article.coverMedia.altTekst ?? ""}
-                    width={48}
-                    height={48}
-                    style={{ width: 48, height: 48, objectFit: "cover", borderRadius: "var(--radius-sm)", display: "block" }}
-                  />
-                ) : (
-                  <div style={{ width: 48, height: 48, borderRadius: "var(--radius-sm)", background: "var(--color-neutral-200)" }} />
-                )}
-              </td>
-              <td>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  {article.breaking && (
-                    <span style={{
-                      fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700,
-                      letterSpacing: "0.1em", textTransform: "uppercase",
-                      background: "var(--color-danger)", color: "#fff",
-                      padding: "2px 8px", borderRadius: 9999, flexShrink: 0,
-                    }}>Breaking</span>
-                  )}
-                  {article.pinned && !article.breaking && (
-                    <Pin size={12} style={{ color: "var(--color-accent)", flexShrink: 0 }} />
-                  )}
-                  <Link className="article-title-link" href={`/artikler/${article.id}`}>{article.titel}</Link>
-                </div>
-                {article.manchet && <small className="table-subtitle">{article.manchet}</small>}
-              </td>
-              <td>
-                <span className={`dot-status ${statusClass(article.status)}`} />
-                {" "}{article.status}
-              </td>
-              <td>
-                <span className={`tag ${article.indholdstype === "Sponsoreret" ? "tag-accent" : article.indholdstype === "Partner" ? "tag-warn" : "tag-neutral"}`}>
-                  {article.indholdstype}
-                </span>
-              </td>
-              <td>
-                <div title={article.forfatter?.navn ?? "Ikke tildelt"} style={avatarStyle}>
-                  {initials(article.forfatter?.navn)}
-                </div>
-              </td>
-              <td>{date(article.publiceretTid)}</td>
-              <td>
-                <span title={date(article.opdateretTid)}>{relativeTime(article.opdateretTid)}</span>
-              </td>
-              <td>
-                <div className="row-actions">
-                  <form action={toggleArticleFlag.bind(null, article.id, "pinned")}>
-                    <button className={`btn btn-icon btn-ghost ${article.pinned ? "is-active" : ""}`} disabled={!canManageFrontpage} title={article.pinned ? "Fjern fastgørelse" : "Fastgør"}><Pin size={16} /></button>
-                  </form>
-                  <form action={toggleArticleFlag.bind(null, article.id, "breaking")}>
-                    <button className={`btn btn-icon btn-ghost ${article.breaking ? "is-active" : ""}`} disabled={!canManageFrontpage} title={article.breaking ? "Fjern breaking" : "Markér breaking"}><Radio size={16} /></button>
-                  </form>
-                  <Link className="btn btn-icon btn-ghost" href={`/artikler/${article.id}`} title="Redigér"><MoreHorizontal size={18} /></Link>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="article-card-list">
+      {articles.map((article) => {
+        const status = statusBadge(article.status);
+        return (
+          <div className="article-card" key={article.id}>
+            <div className="article-card-thumb">
+              {article.coverMedia?.url ? (
+                <img src={article.coverMedia.url} alt={article.coverMedia.altTekst ?? ""} />
+              ) : null}
+            </div>
+            <div className="article-card-body">
+              <div className="article-card-title">
+                {article.breaking && <span className="badge badge-breaking">Breaking</span>}
+                {article.pinned && !article.breaking && <Pin size={12} style={{ color: "var(--color-accent-2-600)", flexShrink: 0 }} />}
+                <Link className="article-title-link" href={`/artikler/${article.id}`}>{article.titel}</Link>
+              </div>
+              {article.manchet && <span className="table-subtitle" style={{ maxWidth: 520 }}>{article.manchet}</span>}
+              <div className="article-card-meta">
+                <span title={article.forfatter?.navn ?? "Ikke tildelt"} style={avatarStyle}>{initials(article.forfatter?.navn)}</span>
+                <span>{article.forfatter?.navn ?? "Ikke tildelt"}</span>
+                <span>·</span>
+                <span title={date(article.opdateretTid)}>{article.publiceretTid ? date(article.publiceretTid) : relativeTime(article.opdateretTid)}</span>
+              </div>
+            </div>
+            <div className="article-card-side">
+              <span className={`badge ${status.cls}`}><span className="badge-dot" /> {status.label}</span>
+              <span className={`tag ${article.indholdstype === "Sponsoreret" ? "tag-accent" : article.indholdstype === "Partner" ? "tag-warn" : "tag-neutral"}`}>
+                {article.indholdstype}
+              </span>
+              <div className="row-actions">
+                <form action={toggleArticleFlag.bind(null, article.id, "pinned")}>
+                  <button className={`btn btn-icon btn-ghost ${article.pinned ? "is-active" : ""}`} disabled={!canManageFrontpage} title={article.pinned ? "Fjern fastgørelse" : "Fastgør"}><Pin size={16} /></button>
+                </form>
+                <form action={toggleArticleFlag.bind(null, article.id, "breaking")}>
+                  <button className={`btn btn-icon btn-ghost ${article.breaking ? "is-active" : ""}`} disabled={!canManageFrontpage} title={article.breaking ? "Fjern breaking" : "Markér breaking"}><Radio size={16} /></button>
+                </form>
+                <Link className="btn btn-icon btn-ghost" href={`/artikler/${article.id}`} title="Redigér"><MoreHorizontal size={18} /></Link>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

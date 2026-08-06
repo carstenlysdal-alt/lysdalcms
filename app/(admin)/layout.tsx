@@ -1,25 +1,36 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LayoutGrid, LogOut, MessageSquare } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { NavLinks } from "@/components/admin/nav-links";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
   return (
-    <div className="admin-shell">
-      <header className="nav">
-        <Link className="nav-brand" href="/artikler">LYSDALS / CMS</Link>
+    <div className="app-shell">
+      <aside className="sidebar">
+        <Link href="/chat" className="sidebar-brand">
+          <span className="sidebar-brand-mark"><LayoutGrid size={15} /></span>
+          <span>
+            <span className="sidebar-brand-name" style={{ display: "block" }}>Lysdals</span>
+            <span className="sidebar-brand-sub">Redaktion</span>
+          </span>
+        </Link>
         <NavLinks />
-        <div className="nav-user">
-          <span><strong>{session.user.name}</strong><small>{session.user.roleName}</small></span>
+        <div className="sidebar-spacer" />
+        <div className="sidebar-bottom">
+          <Link href="/chat" className="sidebar-cta"><MessageSquare size={16} /> AI Assistent</Link>
+          <div className="sidebar-user">
+            <strong>{session.user.name}</strong>
+            <small>{session.user.roleName}</small>
+          </div>
           <form action={async () => { "use server"; await signOut({ redirectTo: "/login" }); }}>
-            <button className="btn btn-icon btn-ghost" aria-label="Log ud"><LogOut size={18} /></button>
+            <button className="sidebar-logout" type="submit"><LogOut size={16} /> Log ud</button>
           </form>
         </div>
-      </header>
-      {children}
+      </aside>
+      <div className="app-content">{children}</div>
     </div>
   );
 }

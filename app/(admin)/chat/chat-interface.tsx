@@ -78,7 +78,7 @@ export function ChatInterface({ sessionId, initialMessages }: {
       {empty ? (
         <div className="chat-empty">
           <Sparkles size={32} style={{ color: "var(--color-accent)", marginBottom: 16 }} />
-          <h2 style={{ fontStyle: "italic", marginBottom: 8 }}>Hvad vil du undersøge?</h2>
+          <h2 style={{ marginBottom: 8 }}>Hvad vil du undersøge?</h2>
           <p className="text-muted" style={{ marginBottom: 32, maxWidth: 440, textAlign: "center" }}>
             Stil et spørgsmål, undersøg en påstand, eller skriv en historie. Y finder kilderne og arbejder ved din side.
           </p>
