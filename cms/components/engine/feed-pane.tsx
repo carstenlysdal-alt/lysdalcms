@@ -2,8 +2,9 @@ import Link from "next/link";
 import { Radio, Search } from "lucide-react";
 import type { EngineTab, FeedData } from "@/lib/engine/types";
 import { FeedCardView } from "./feed-card";
+import { ScoreAll } from "./score-all";
 
-export type EngineQuery = { tab: EngineTab; omraade: string; q: string; id: string };
+export type EngineQuery = { tab: EngineTab; omraade: string; q: string; id: string; sort?: "score" | "" };
 
 /** Bygger en lænke til Production Engine med de valgte filtre (tom værdi udelades). */
 export function engineHref(base: EngineQuery, patch: Partial<EngineQuery> = {}): string {
@@ -13,6 +14,7 @@ export function engineHref(base: EngineQuery, patch: Partial<EngineQuery> = {}):
   if (v.omraade) p.set("omraade", v.omraade);
   if (v.q) p.set("q", v.q);
   if (v.id) p.set("id", v.id);
+  if (v.sort) p.set("sort", v.sort);
   const s = p.toString();
   return `/redaktion/engine${s ? `?${s}` : ""}`;
 }
@@ -62,6 +64,15 @@ export function FeedPane({ data, query, canWrite }: { data: FeedData; query: Eng
             <input id="eng-arkiv-q" className="cms-input" name="q" defaultValue={query.q} placeholder="Emne, sted eller navn" maxLength={200} />
             <button className="cms-btn cms-btn-secondary" type="submit"><Search size={14} aria-hidden="true" /> Find</button>
           </form>
+        )}
+        {query.tab === "feeds" && data.cards.length > 0 && (
+          <div className="eng-sortbar">
+            <nav className="eng-areas" aria-label="Sortering">
+              <Link className="eng-area" href={engineHref(query, { sort: "" })} scroll={false} prefetch={false} aria-current={!query.sort ? "page" : undefined}>Nyeste</Link>
+              <Link className="eng-area" href={engineHref(query, { sort: "score" })} scroll={false} prefetch={false} aria-current={query.sort === "score" ? "page" : undefined}>Local Score</Link>
+            </nav>
+            {canWrite && <ScoreAll ids={data.cards.filter((c) => c.kind === "signal" && !c.score && !c.rating.foelsom).map((c) => c.id.slice(c.id.indexOf(":") + 1))} />}
+          </div>
         )}
         {data.sync.sidsteMaskinSignalIso === null && query.tab === "feeds" && <p className="cms-hint">Ingen agent har leveret signaler endnu. Opret en nøgle under Kontrolrum › Ingest.</p>}
       </section>

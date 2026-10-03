@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Antenna, BookOpenText, KeyRound, ScrollText, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { Antenna, BookOpenText, Gauge, KeyRound, ScrollText, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import "@/styles/kontrolrum.css";
 import { NoAccess } from "@/components/admin/no-access";
 import { Card } from "@/components/ui/Card";
@@ -32,6 +32,7 @@ export default async function ControlRoomPage() {
 
   const tiles = [
     manage && { href: "/redaktion/kontrolrum/grundlag", icon: <BookOpenText size={18} />, title: "AI-grundlag", stat: "Hvor står hvad", text: "Håndbogen til AI'en: medie, principper, værdier og koncepter, og et overblik over alle lag, rating og forbindelsen til DeepSeek." },
+    manage && { href: "/redaktion/kontrolrum/score", icon: <Gauge size={18} />, title: "Local Score", stat: "Vægte, bånd og søjler", text: "Sådan vurderes signaler som journalistisk mulighed. AI estimerer delscorer; du bestemmer vægte og grænser." },
     manage && { href: "/redaktion/kontrolrum/prompts", icon: <ScrollText size={18} />, title: "Prompts", stat: `${custom} af ${prompts.length} tilpasset`, text: "Opgaver, sprog og stil, og ratingscore. Med versionshistorik, forskel mod standard og gendannelse." },
     manage && { href: "/redaktion/kontrolrum/kilder", icon: <ShieldCheck size={18} />, title: "Kilder og rating", stat: `${sources} aktive kilder`, text: "Din egen score for kilder, der går forud for de indbyggede regler. Prøv ratingen, før du gemmer." },
     manage && { href: "/redaktion/kontrolrum/feeds", icon: <Antenna size={18} />, title: "Kildepakke", stat: `${feeds.filter((f) => f.aktiv).length} aktive af ${feeds.length}`, text: "Byens feeds og kilder samlet: sortér, gruppér, redigér, hent nu og kopiér pakken til en anden by." },

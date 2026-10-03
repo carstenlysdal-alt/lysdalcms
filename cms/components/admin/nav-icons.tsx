@@ -1,5 +1,5 @@
 import {
-  Activity, Antenna, BarChart3, BookOpenText, ClipboardList, FileText, FolderTree, Handshake, Images, Inbox, LayoutTemplate, Mail, MapPin,
+  Activity, Antenna, BarChart3, BookOpenText, Gauge, ClipboardList, FileText, FolderTree, Handshake, Images, Inbox, LayoutTemplate, Mail, MapPin,
   Megaphone, MessageSquareText, Mic, PenLine, Radio, Rss, Tags, UserRound, Users, WalletCards, CircleHelp,
   KeyRound, ScrollText, ShieldCheck, SlidersHorizontal, Workflow, type LucideIcon,
 } from "lucide-react";
@@ -10,6 +10,7 @@ export const NAV_ICONS: Record<NavIconKey, LucideIcon> = {
   engine: Workflow,
   control: SlidersHorizontal,
   grundlag: BookOpenText,
+  score: Gauge,
   prompts: ScrollText,
   ratings: ShieldCheck,
   feeds: Antenna,

@@ -2,11 +2,38 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { FilePlus2, Link2, PenLine, Sparkles, TriangleAlert } from "lucide-react";
-import { attachSourceAction, startFromSignalAction, startFromTipAction } from "@/app/redaktion/engine/actions";
+import { FilePlus2, Gauge, Link2, PenLine, Sparkles, TriangleAlert } from "lucide-react";
+import { attachSourceAction, scoreSignalAction, startFromSignalAction, startFromTipAction } from "@/app/redaktion/engine/actions";
 import type { FeedCard } from "@/lib/engine/types";
 import { useEngineBus } from "./engine-bus";
 import { GradeBadge } from "./rating-badge";
+
+function ScoreSummary({ score, onAgain, pending }: { score: NonNullable<FeedCard["score"]>; onAgain: () => void; pending: boolean }) {
+  return (
+    <details className="eng-score">
+      <summary>
+        <span className={`eng-score-num is-${score.band.toLowerCase()}`}><span className="eng-score-value">{score.total}</span><span className="eng-score-band">{score.bandLabel}</span></span>
+        <span className="eng-score-fn">{score.funktion} · {score.soejle}{score.prioritet ? ` · foreslår ${score.prioritet}` : ""}</span>
+        <span className="cms-sr-only">Local Score {score.total} af 100, {score.bandLabel}. Vis detaljer.</span>
+      </summary>
+      <div className="eng-score-body">
+        {score.resume && <p>{score.resume}</p>}
+        {score.hvorViktigt && <p><strong>Hvorfor:</strong> {score.hvorViktigt}</p>}
+        <ul className="eng-score-dims" aria-label="Delscorer">
+          {score.dimensioner.map((d) => (
+            <li key={d.navn} title={d.begrundelse ?? undefined}><span>{d.navn}</span><span className="eng-score-bar" aria-hidden="true"><span style={{ width: `${d.score}%` }} /></span><span className="eng-score-n">{d.score}</span></li>
+          ))}
+        </ul>
+        {score.vinkler.length > 0 && <><p className="eng-score-h">Mulige vinkler</p><ul className="eng-score-list">{score.vinkler.map((v) => <li key={v}>{v}</li>)}</ul></>}
+        <p><strong>Anbefalet format:</strong> {score.format}{score.sekundaere.length ? ` (også: ${score.sekundaere.join(", ")})` : ""}</p>
+        {score.loeft && <p><strong>Løft:</strong> {score.loeft}</p>}
+        {score.mangler.length > 0 && <p><strong>Mangler:</strong> {score.mangler.join("; ")}</p>}
+        {score.advarsel && <p className="eng-item-warn"><TriangleAlert size={12} aria-hidden="true" /> {score.advarsel}</p>}
+        <button type="button" className="cms-btn cms-btn-secondary" disabled={pending} onClick={onAgain}>Vurdér igen</button>
+      </div>
+    </details>
+  );
+}
 
 const KIND_LABEL: Record<FeedCard["kind"], string> = { signal: "Signal", borgertip: "Borgertip", meddeler: "Meddeler", arkiv: "Arkiv" };
 
@@ -24,6 +51,14 @@ export function FeedCardView({ card, canWrite }: { card: FeedCard; canWrite: boo
       bus.showPane("edit");
       const res = card.kind === "signal" ? await startFromSignalAction(rawId) : await startFromTipAction(card.kind === "meddeler" ? "sag" : "tip", rawId);
       if (res && !res.ok) setNote({ ok: false, text: res.error });
+    });
+  }
+
+  function rate(force: boolean) {
+    setNote(null);
+    startTransition(async () => {
+      const res = await scoreSignalAction(rawId, force);
+      if (!res.ok) setNote({ ok: false, text: res.error });
     });
   }
 
@@ -55,6 +90,7 @@ export function FeedCardView({ card, canWrite }: { card: FeedCard; canWrite: boo
         <GradeBadge grade={card.rating.grade} score={card.rating.score} title={`${card.rating.label}. ${card.rating.begrundelse}`} />
         <span className="eng-item-source">{card.kildeUrl ? <a href={card.kildeUrl} target="_blank" rel="noopener noreferrer">{card.kilde}<span className="cms-sr-only"> (åbner i ny fane)</span></a> : card.kilde}{card.omraade ? ` · ${card.omraade}` : ""}</span>
       </p>
+      {card.score && <ScoreSummary score={card.score} onAgain={() => rate(true)} pending={pending} />}
       {card.rating.foelsom && <p className="eng-item-warn"><TriangleAlert size={12} aria-hidden="true" /> Kan indeholde personoplysninger</p>}
       {card.maskinindsamlet && !card.godkendt && <p className="eng-item-note">Maskinindsamlet, ikke redaktionelt vurderet</p>}
       <footer className="eng-item-actions">
@@ -67,6 +103,9 @@ export function FeedCardView({ card, canWrite }: { card: FeedCard; canWrite: boo
         )}
         {!openHref && canWrite && card.kind === "signal" && !card.rating.foelsom && (
           <Link className="cms-btn cms-btn-ai-soft" href={`/redaktion/engine/generer?signal=${encodeURIComponent(rawId)}`}><Sparkles size={14} aria-hidden="true" /> Generér artikel</Link>
+        )}
+        {!card.score && canWrite && card.kind === "signal" && (
+          <button type="button" className="cms-btn cms-btn-secondary" disabled={pending} onClick={() => rate(false)}><Gauge size={14} aria-hidden="true" /> {pending ? "Vurderer…" : "Local Score"}</button>
         )}
         {canAttach && bus.editorOpen && (
           <button type="button" className="cms-btn cms-btn-ai-soft" disabled={pending} onClick={attach}><Link2 size={14} aria-hidden="true" /> {card.kind === "arkiv" ? "Kobl som baggrund" : "Brug som kilde"}</button>

@@ -32,12 +32,12 @@ export default async function EnginePage({ searchParams }: { searchParams?: Prom
   const sp = (await searchParams) ?? {};
   const str = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string).slice(0, 200) : "");
   const tab: EngineTab = (ENGINE_TABS as readonly string[]).includes(str("tab")) ? (str("tab") as EngineTab) : "feeds";
-  const query: EngineQuery = { tab, omraade: str("omraade"), q: str("q"), id: str("id") };
+  const query: EngineQuery = { tab, omraade: str("omraade"), q: str("q"), id: str("id"), sort: str("sort") === "score" ? "score" : "" };
   const isNew = str("ny") === "1" && !query.id;
 
   const wantsEditor = Boolean(query.id) || isNew;
   const [feed, instance, profiles, editorData, selected] = await Promise.all([
-    loadFeed(user, { tab, omraade: query.omraade, query: query.q, articleId: query.id || null }),
+    loadFeed(user, { tab, omraade: query.omraade, query: query.q, articleId: query.id || null, sort: query.sort || null }),
     db.instance.findUnique({ where: { id: user.instansId }, select: { navn: true } }),
     loadActiveSourceProfiles(user.instansId),
     wantsEditor ? loadEditorOptions(user) : Promise.resolve(null),

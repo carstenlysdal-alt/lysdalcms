@@ -82,7 +82,7 @@ test("registeret dækker alle AI-opgaver, har unikke nøgler og afviser ukendte 
   const keys = PROMPT_DEFS.map((d) => d.noegle);
   assert.equal(new Set(keys).size, keys.length);
   for (const task of EDITORIAL_TASKS) assert.ok(isPromptKey(promptKeyForTask(task)), task);
-  assert.deepEqual(PROMPT_DEFS.filter((d) => d.kind === "rating").map((d) => d.noegle).sort(), ["rating.kilde", "rating.rubrik"]);
+  assert.deepEqual(PROMPT_DEFS.filter((d) => d.kind === "rating").map((d) => d.noegle).sort(), ["rating.kilde", "rating.rubrik", "rating.score", "rating.scoreConfig"]);
   assert.equal(isPromptKey("opgave.findes-ikke"), false);
   assert.equal(isPromptKey("__proto__"), false);
   assert.equal(getPromptDef("constructor"), undefined);

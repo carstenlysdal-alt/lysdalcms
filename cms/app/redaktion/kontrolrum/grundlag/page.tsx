@@ -10,7 +10,6 @@ import { resolveDeepseekTextModel } from "@/lib/ai/provider/deepseek-text";
 import { getAuthorizedUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
-import { promptKeyForTask } from "@/lib/prompts/compose";
 import { listPromptStates, type PromptState } from "@/lib/prompts/store";
 
 const PROMPT_BASE = "/redaktion/kontrolrum/prompts";
@@ -90,8 +89,9 @@ export default async function GrundlagPage() {
             <p className="kr-layer-text">Her står de score, AI&apos;en og kilderegisteret arbejder efter. Kildeskalaen er A (80+), B (60+), C (40+) og D (under 40). Jeres egne scorer for navngivne kilder går forud for de indbyggede regler.</p>
             <ul className="kr-layer-links">
               {rating.map((s) => (
-                <li key={s.def.noegle}><Link href={hrefFor(promptKeyForTask(s.def.opgave ?? ""))}>{s.def.titel}</Link> <span className="kr-muted">{s.tilpasset ? `tilpasset v${s.row?.version}` : "standard"}</span></li>
+                <li key={s.def.noegle}><Link href={hrefFor(s.def.noegle)}>{s.def.titel}</Link> <span className="kr-muted">{s.tilpasset ? `tilpasset v${s.row?.version}` : "standard"}</span></li>
               ))}
+              <li><Link href="/redaktion/kontrolrum/score">Local Score (vægte og bånd)</Link></li>
               <li><Link href="/redaktion/kontrolrum/kilder">Kilder og rating</Link> <span className="kr-muted">{sourceCount} aktive kilder</span></li>
             </ul>
           </div>

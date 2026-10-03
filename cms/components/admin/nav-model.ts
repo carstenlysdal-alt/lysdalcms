@@ -11,7 +11,7 @@ import { canAccessPage, canViewPartnerBriefs } from "@/lib/redaktion-access";
  */
 export type NavIconKey =
   | "articles" | "write" | "media" | "tasks" | "fee" | "chat"
-  | "engine" | "control" | "grundlag" | "prompts" | "ratings" | "feeds" | "ingest"
+  | "engine" | "control" | "grundlag" | "score" | "prompts" | "ratings" | "feeds" | "ingest"
   | "inbox" | "qa" | "signals" | "sources" | "interview"
   | "analytics" | "newsletter" | "ads" | "sponsor"
   | "sections" | "areas" | "topics" | "frontpage"
@@ -87,6 +87,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
     items: [
       { href: "/redaktion/kontrolrum", label: "Oversigt", icon: "control", allowed: (u) => canAccessPage(u, "kontrolrum"), exact: true },
       { href: "/redaktion/kontrolrum/grundlag", label: "AI-grundlag", icon: "grundlag", allowed: anyOf(PERMISSIONS.CONTROLROOM_MANAGE) },
+      { href: "/redaktion/kontrolrum/score", label: "Local Score", icon: "score", allowed: anyOf(PERMISSIONS.CONTROLROOM_MANAGE) },
       { href: "/redaktion/kontrolrum/prompts", label: "Prompts", icon: "prompts", allowed: anyOf(PERMISSIONS.CONTROLROOM_MANAGE) },
       { href: "/redaktion/kontrolrum/kilder", label: "Kilder og rating", icon: "ratings", allowed: anyOf(PERMISSIONS.CONTROLROOM_MANAGE) },
       { href: "/redaktion/kontrolrum/feeds", label: "Kildepakke", icon: "feeds", allowed: anyOf(PERMISSIONS.CONTROLROOM_MANAGE) },

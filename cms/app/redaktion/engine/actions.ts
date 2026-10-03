@@ -1,6 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { guardAdminAction } from "@/lib/admin-guard";
+import { scoreSignal, scoreSignals } from "@/lib/score/service";
 import { getAuthorizedUser } from "@/lib/auth";
 import { searchMaterial, sourceFromMaterial } from "@/lib/engine/material";
 import { startArticleFromSignal } from "@/lib/engine/start";
@@ -43,4 +46,26 @@ export async function searchMaterialAction(query: string): Promise<SearchResult>
   const user = await getAuthorizedUser(PERMISSIONS.ARTICLE_CREATE);
   if (!user) return { ok: false, error: "Ingen adgang." };
   return searchMaterial(user, String(query));
+}
+
+/** Local Score for ét signal (AI estimerer, systemet beregner). Rate-limitet pr. bruger. */
+export async function scoreSignalAction(signalId: string, force = false): Promise<{ ok: true; genbrugt: boolean } | ActionError> {
+  const user = await getAuthorizedUser(PERMISSIONS.ARTICLE_AI_USE);
+  if (!user) return { ok: false, error: "Du har ikke adgang til AI i artikelarbejdet." };
+  const res = await scoreSignal(user, String(signalId), { force });
+  if (!res.ok) return res;
+  revalidatePath("/redaktion/engine");
+  return { ok: true, genbrugt: res.genbrugt };
+}
+
+export async function scoreVisibleAction(ids: string[]): Promise<{ ok: true; besked: string } | ActionError> {
+  const user = await getAuthorizedUser(PERMISSIONS.ARTICLE_AI_USE);
+  if (!user) return { ok: false, error: "Du har ikke adgang til AI i artikelarbejdet." };
+  const limited = await guardAdminAction({ action: "score-batch", userId: user.id, limit: 12, windowMs: 10 * 60_000 });
+  if (limited) return { ok: false, error: limited };
+  const res = await scoreSignals(user, (Array.isArray(ids) ? ids : []).map(String));
+  if (!res.ok) return res;
+  revalidatePath("/redaktion/engine");
+  const fejl = res.fejl.length ? ` ${res.fejl[0]}` : "";
+  return { ok: true, besked: `${res.vurderet} vurderet${res.genbrugt ? `, ${res.genbrugt} havde allerede en vurdering` : ""}.${fejl}` };
 }

@@ -7,6 +7,30 @@
 Denne fil er overleveringsloggen. Læs den FØR du bygger videre — den indeholder
 alle beslutninger, Next 16-faldgruber, præcis hvad der er gjort, og de næste trin.
 
+## Arbejdslog — Fase 2: AI-grundlag, kildepakke, artikelgenerator og Local Score (2026-10-03)
+
+**Svar på "hvor står mine prompts, rating osv.?":** `/redaktion/kontrolrum/grundlag` (håndbogen) viser de seks lag, AI'en læser, og linker til hvert lag. Lag 2 er nyt: **redaktionelt grundlag** (`grundlag.medie|principper|vaerdier|koncepter`), indsat i systemprompten efter de låste sikkerhedsregler og før stilen. Tomt grundlag ændrer intet (bevist i `tests/prompts.test.ts`). Rating: `/kontrolrum/score` (vægte, bånd, funktioner, søjler) og `/kontrolrum/kilder` (kilderating A-D). DeepSeek-forbindelsen vises på samme side (nøglen `DEEPSEEK_API_KEY` ligger kun som miljøvariabel).
+
+### Kildepakke (`/kontrolrum/feeds`)
+- `FeedDefinition` har nu `kategori`, `prioritet` (1-3 = P0-P2) og hentestatus. Sortér/filtrér/gruppér, massehandlinger, **kildekatalog** (Slagelse 74 og Næstved 93 kilder fra `docs/localrating/source-registries`, genereret af `scripts/gen-feed-catalog.ts` til `lib/feeds/catalog-data.ts`; importeres som inaktive kladder uden adresse), **kopiér pakken til anden by** (kun byer brugeren har adgang til via `lib/instance-access.ts`; kopier er altid slået fra; by-navn kan erstattes).
+- **Hent nu** (`lib/feeds/fetch.ts`): manuel hentning af RSS/Atom/JSON Feed og websider (ADR-016: CMS'et henter aldrig af sig selv). Alt går gennem `lib/net/safe-fetch.ts` (SSRF S1-S14, S17 og robots.txt S15; links i feeds hentes aldrig, S16). Signaler lander `maskinindsamlet` og **ugodkendt**. Kun testmiljøer må sætte `FEED_FETCH_LOOPBACK_PORTS` (tillader loopback på de porte); må ALDRIG sættes i drift.
+- Nye afhængigheder: `fast-xml-parser`, `cheerio`, `unpdf`.
+
+### Artikelgenerator (`/redaktion/engine/generer`)
+- Kilder: feedkort, webadresse (side eller PDF-link), uploadet PDF, indsat tekst. Billeder hentes aldrig; kun adresse, alt-tekst og billedtekst gemmes som reference (rettigheder uafklarede).
+- Profiler (redigerbare prompts, kind "generator"): nyhed, citathistorie kort/lang (Local Citation), syntese (Local Syntese), plus fælles regler. Svarformatet er låst.
+- **Værn** (`lib/generate/guardrails.ts`, deterministisk): opfundne citater fjernes, tal/tidspunkter/citater i tekst kontrolleres mod kildernes tekst, links/HTML renses, SEO/SoMe/slug normaliseres. Politi/112 (også på domæne) og Krimi/Sundhed er spærret.
+- Kørslen gemmes i `GenerationRun` (30 dage), og kladden oprettes ud fra kørslen (aldrig ud fra klientens tekst): status Idé, AI-assisteret, `marking.godkendtAf` tom, kildeuddrag i `ArticleMeta.kilder` til faktatjek i Engine. Intet udgives.
+- Afvigelse fra `docs/localrating` D4: AI-udbyder er DeepSeek via den eksisterende gateway.
+
+### Local Score (Y Rating, `lib/score/*`)
+- AI estimerer kun 7 dimensioner og 11 funktioner; total, bånd, primær/sekundære funktioner, søjler, format og foreslået prioritet beregnes i `model.ts` ud fra konfigurationen (prompt `rating.scoreConfig`, versioneret). Estimater gemmes i `ScoreRun`, så ændrede vægte slår igennem uden nyt AI-kald. Feedkort har badge, detaljer, sortering og "Vurdér ti".
+- Ikke bygget endnu: Local Syntese/Citation som selvstændig chat (Arbejdsrum med `{svar, udkast}`), Business-generatoren, `RatingRun` med den ikke-Y-model `local`, shadow-kørsler. Rating af artikler (kun signaler vurderes).
+
+### Drift
+- Migrationer: `feeds_kildepakker`, `generation_run`, `score_run`. Kør `prisma:pg:check`.
+- Findes allerede: proxy-429 ved mange samtidige sidehenvisninger i browsertest (`PAGE_RATE_LIMIT_PER_MIN`) er stadig uundersøgt.
+
 ## Arbejdslog — Production Engine og Kontrolrum (2026-10-03)
 
 **Formål:** ét arbejdsbord til hele produktionen (signaler ind, skrivning med AI, kvalitets- og faktatjek, ratede kilder, søgning i mere materiale) og et kontrolrum, hvor prompts, kilderating, feeds og ingest styres som redigerbare data. Layoutet er hentet fra Carstens designudkast (tre felter), men bygget i CMS'ets eget designsystem (`--ed-*`/`ui-*`), ikke kopieret 1:1.

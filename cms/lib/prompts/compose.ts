@@ -8,6 +8,7 @@
  */
 import { GENERATOR_COMMON_DEFAULT, GENERATOR_PROFILE_DEFAULTS, GENERATOR_SHAPE, GENERATOR_VERSION } from "./generator-defaults";
 import type { ProfileId } from "../generate/types";
+import { SCORE_INSTRUCTION_DEFAULT, SCORE_SHAPE, SCORE_VERSION } from "./score-defaults";
 import { EDITORIAL_SAFETY, GRUNDLAG_HEADINGS, GRUNDLAG_PARTS, LAYER_DEFAULTS, LAYER_TASKS, STYLE_DEFAULT, TASK_DEFAULTS, type GrundlagPart } from "./defaults";
 
 export type PromptOverrides = Readonly<Record<string, string>>;
@@ -94,4 +95,14 @@ export function composeGeneration(profile: ProfileId, overrides: PromptOverrides
   if (own !== undefined) custom.push(generatorKey(profile));
   const text = `${common ?? GENERATOR_COMMON_DEFAULT}\n\n${own ?? GENERATOR_PROFILE_DEFAULTS[profile]}`;
   return { instruction: custom.length ? `${text}\n\n${CUSTOM_NOTE}` : text, shape: GENERATOR_SHAPE, version: GENERATOR_VERSION, custom };
+}
+
+// ── Local Score ──────────────────────────────────────────────────────────────
+
+export const SCORE_PROMPT_KEY = "rating.score";
+export const SCORE_CONFIG_KEY = "rating.scoreConfig";
+
+export function composeScorePrompt(overrides: PromptOverrides = {}): ComposedGeneration {
+  const own = overrides[SCORE_PROMPT_KEY];
+  return { instruction: own !== undefined ? `${own}\n\n${CUSTOM_NOTE}` : SCORE_INSTRUCTION_DEFAULT, shape: SCORE_SHAPE, version: SCORE_VERSION, custom: own !== undefined ? [SCORE_PROMPT_KEY] : [] };
 }

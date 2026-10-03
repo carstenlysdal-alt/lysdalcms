@@ -6,6 +6,9 @@
 import { EDITORIAL_SAFETY, GRUNDLAG_DEFAULTS, GRUNDLAG_EXAMPLES, GRUNDLAG_PARTS, GRUNDLAG_TITLES, LAYER_DEFAULTS, LAYER_EXAMPLES, LAYER_TASKS, STYLE_DEFAULT, TASK_DEFAULTS } from "./defaults";
 import { GENERATOR_COMMON_KEY, generatorKey, grundlagKey, layerKey, promptKeyForTask, STYLE_KEY } from "./compose";
 import { GENERATOR_COMMON_DEFAULT, GENERATOR_PROFILE_DEFAULTS, GENERATOR_SHAPE } from "./generator-defaults";
+import { SCORE_CONFIG_KEY, SCORE_PROMPT_KEY } from "./compose";
+import { SCORE_INSTRUCTION_DEFAULT, SCORE_SHAPE } from "./score-defaults";
+import { DEFAULT_SCORE_CONFIG, parseScoreConfigText, stringifyScoreConfig } from "../score/config";
 import { PROFILE_IDS, PROFILES, type ProfileId } from "../generate/types";
 import { EDITORIAL_TASKS, TASK_INFO, type EditorialTask } from "../ai/editorial-schemas";
 
@@ -28,6 +31,8 @@ export type PromptDef = {
   opgave?: EditorialTask;
   /** Generatorprofil (kun kind "generator"; udeladt for de fælles regler). */
   profil?: ProfileId;
+  /** Ekstra validering af teksten (fx at en konfiguration er gyldig). Returnerer en fejltekst eller null. */
+  tjek?: (tekst: string) => string | null;
 };
 
 export const KIND_LABEL: Record<PromptKind, string> = {
@@ -139,6 +144,32 @@ function build(): PromptDef[] {
       opgave: task,
     });
   }
+  defs.push(
+    {
+      noegle: SCORE_PROMPT_KEY,
+      kind: "rating",
+      titel: "Local Score: vurdering af signaler",
+      beskrivelse: "Instruktionen til AI, når et signal vurderes på 7 dimensioner og 11 journalistiske funktioner. AI estimerer kun delscorer; totalen beregnes af systemet.",
+      standard: SCORE_INSTRUCTION_DEFAULT,
+      laast: SCORE_SHAPE,
+      minTegn: 100,
+      maxTegn: 5000,
+    },
+    {
+      noegle: SCORE_CONFIG_KEY,
+      kind: "rating",
+      titel: "Local Score: vægte, bånd og søjler",
+      beskrivelse: "Vægtene for de 7 dimensioner, grænserne mellem bånd, rækkefølgen ved lighed og søjlerne. Redigeres på siden Local Score. Ændringer slår igennem på alle eksisterende vurderinger uden nyt AI-kald.",
+      standard: stringifyScoreConfig(DEFAULT_SCORE_CONFIG),
+      laast: null,
+      minTegn: 200,
+      maxTegn: 8000,
+      tjek: (tekst) => {
+        const res = parseScoreConfigText(tekst);
+        return res.ok ? null : res.error;
+      },
+    },
+  );
   return defs;
 }
 
@@ -168,6 +199,8 @@ export function validatePromptText(def: PromptDef, raw: string): PromptValidatio
   if (tekst.length < def.minTegn) return { ok: false, error: def.minTegn === 0 ? "Teksten må ikke være tom." : `Skriv mindst ${def.minTegn} tegn.` };
   if (tekst.length > def.maxTegn) return { ok: false, error: `Højst ${def.maxTegn} tegn (nu ${tekst.length}).` };
   if (/<\s*\/?\s*data\b/i.test(tekst)) return { ok: false, error: "Teksten må ikke indeholde <data>-mærker: de bruges til at holde indhold adskilt fra instruktioner." };
-  if (/svarformat\s*\(kun json\)/i.test(tekst)) return { ok: false, error: "Svarformatet er låst i koden og kan ikke tilrettes her." };
+  const extra = def.tjek?.(tekst);
+  if (extra) return { ok: false, error: extra };
+  if (def.noegle !== SCORE_CONFIG_KEY && /svarformat\s*\(kun json\)/i.test(tekst)) return { ok: false, error: "Svarformatet er låst i koden og kan ikke tilrettes her." };
   return { ok: true, tekst };
 }

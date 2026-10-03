@@ -8,6 +8,8 @@ export type CardRating = { grade: SourceGrade; score: number; label: string; beg
 
 export type CardKind = "signal" | "borgertip" | "meddeler" | "arkiv";
 
+import type { CardScore } from "../score/present";
+
 export type FeedCard = {
   /** "signal:<id>" | "tip:<id>" | "sag:<id>" | "arkiv:<id>" */
   id: string;
@@ -33,6 +35,8 @@ export type FeedCard = {
   articleId: string | null;
   /** Arkiv: emneoverlap 0-100. */
   match?: number;
+  /** Local Score (kun signaler, når de er vurderet). */
+  score?: CardScore | null;
 };
 
 export type FeedData = {

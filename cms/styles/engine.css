@@ -169,3 +169,26 @@
   .eng-ribbon-status li.cms-muted { display: none; }
   .eng-ribbon .cms-btn { min-height: 40px; }
 }
+
+/* ── Local Score ────────────────────────────────────────────────────────── */
+.eng-sortbar { display: grid; gap: 6px; margin-top: 8px; }
+.eng-scoreall { display: grid; gap: 4px; justify-items: start; }
+.eng-score { margin: 2px 0; border-top: 1px solid var(--ed-border); padding-top: 6px; }
+.eng-score summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; min-height: 44px; flex-wrap: wrap; }
+.eng-score summary::-webkit-details-marker { display: none; }
+.eng-score-num { display: inline-flex; align-items: baseline; gap: 6px; padding: 2px 8px 2px 6px; border-left: 4px solid var(--ed-border-strong); font-variant-numeric: tabular-nums; }
+.eng-score-value { font: 800 22px/1 var(--ed-font-mono); }
+.eng-score-band { font: 600 12px var(--ed-font-body); text-transform: uppercase; letter-spacing: 0.04em; }
+.eng-score-num.is-urgent { border-left-color: var(--ed-danger); }
+.eng-score-num.is-high { border-left-color: var(--ed-primary); }
+.eng-score-num.is-potential { border-left-color: var(--ed-ai); }
+.eng-score-fn { font-size: 13px; color: var(--ed-muted); }
+.eng-score-body { display: grid; gap: 8px; padding: 6px 0 4px; font-size: 13px; line-height: 1.5; }
+.eng-score-body p { margin: 0; }
+.eng-score-h { font: 700 12px var(--ed-font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ed-muted); }
+.eng-score-list { margin: 0; padding-left: 18px; }
+.eng-score-dims { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.eng-score-dims li { display: grid; grid-template-columns: minmax(0, 1fr) 80px 2.2ch; gap: 8px; align-items: center; }
+.eng-score-bar { display: block; height: 6px; background: var(--ed-border); border-radius: 1px; overflow: hidden; }
+.eng-score-bar > span { display: block; height: 100%; background: var(--ed-text); }
+.eng-score-n { font: 700 12px var(--ed-font-mono); text-align: right; font-variant-numeric: tabular-nums; }

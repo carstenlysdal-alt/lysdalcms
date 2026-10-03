@@ -71,6 +71,7 @@ model Instance {
   sourceProfiles         SourceProfile[]
   feedDefinitions        FeedDefinition[]
   generationRuns         GenerationRun[]
+  scoreRuns              ScoreRun[]
 }
 
 // ── CMS-05: konfigurerbare roller (rettigheder som data, ikke hardkodet) ────
@@ -1082,4 +1083,26 @@ model GenerationRun {
   @@index([instansId, createdAt])
   @@index([instansId, userId])
   @@index([udloebTid])
+}
+
+/// Local Score: AI's delscorer for ét signal. Total, bånd og søjler beregnes ud fra den GÆLDENDE konfiguration (lib/score/model.ts),
+/// så ændrede vægte slår igennem uden nyt AI-kald. Indholdet af signalet gemmes ikke her, kun estimaterne og AI's korte begrundelser.
+model ScoreRun {
+  id            String   @id @default(cuid())
+  instansId     String
+  instans       Instance @relation(fields: [instansId], references: [id])
+  signalId      String
+  userId        String
+  inputHash     String   // sha256 af det AI så + promptversion: samme input genbruger kørslen
+  promptVersion String
+  estimater     Json     // { dimensions, functions }
+  analyse       Json     // begrundelser, resumé, hvorfor det er vigtigt, vinkler, løft, mangler, advarsel
+  udbyder       String?
+  modelId       String?
+  tokensInd     Int?
+  tokensUd      Int?
+  createdAt     DateTime @default(now())
+
+  @@index([instansId, signalId, createdAt])
+  @@index([instansId, createdAt])
 }

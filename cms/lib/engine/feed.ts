@@ -3,6 +3,8 @@ import type { AuthorizedUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canViewSourceDetails } from "@/lib/redaktion-access";
 import { loadActiveSourceProfiles } from "@/lib/sources/store";
+import { toCardScore } from "@/lib/score/present";
+import { loadScoreViews } from "@/lib/score/service";
 import { keywords, MIN_ARCHIVE_SCORE, overlapScore } from "./archive";
 import { rateSource, type SourceProfileLite } from "./source-rating";
 import { SIGNAL_ARTICLE_PREFIX, type CardRating, type EngineTab, type FeedCard, type FeedData } from "./types";
@@ -31,7 +33,7 @@ function toRating(r: ReturnType<typeof rateSource>): CardRating {
   return { grade: r.grade, score: r.score, label: r.label, begrundelse: r.begrundelse, foelsom: r.foelsom };
 }
 
-type FeedParams = { tab: EngineTab; omraade?: string | null; query?: string | null; articleId?: string | null };
+type FeedParams = { tab: EngineTab; omraade?: string | null; query?: string | null; articleId?: string | null; sort?: "score" | null };
 
 /** Henter feedet til venstre felt i Production Engine. Alt er afgrænset til brugerens aktive by. */
 export async function loadFeed(user: AuthorizedUser, params: FeedParams): Promise<FeedData> {
@@ -50,7 +52,7 @@ export async function loadFeed(user: AuthorizedUser, params: FeedParams): Promis
   ]);
 
   let cards: FeedCard[] = [];
-  if (params.tab === "feeds") cards = await signalCards(instansId, area, profiles);
+  if (params.tab === "feeds") cards = await signalCards(instansId, area, profiles, params.sort === "score");
   else if (params.tab === "tips") cards = await tipCards(user, area, profiles);
   else cards = await loadArchiveMatches(user, { query: params.query, articleId: params.articleId });
 
@@ -62,7 +64,7 @@ export async function loadFeed(user: AuthorizedUser, params: FeedParams): Promis
   };
 }
 
-async function signalCards(instansId: string, area: string | null, profiles: SourceProfileLite[]): Promise<FeedCard[]> {
+async function signalCards(instansId: string, area: string | null, profiles: SourceProfileLite[], byScore: boolean): Promise<FeedCard[]> {
   const rows = await db.signal.findMany({
     where: { instansId, ...(area ? { omraade: { slug: area } } : {}) },
     orderBy: { createdAt: "desc" },
@@ -73,7 +75,8 @@ async function signalCards(instansId: string, area: string | null, profiles: Sou
     ? await db.article.findMany({ where: { instansId, externalId: { in: rows.map((r) => `${SIGNAL_ARTICLE_PREFIX}${r.id}`) } }, select: { id: true, externalId: true } })
     : [];
   const articleBySignal = new Map(started.map((a) => [a.externalId!.slice(SIGNAL_ARTICLE_PREFIX.length), a.id]));
-  return rows.map((s) => ({
+  const scores = await loadScoreViews(instansId, rows.map((r) => r.id));
+  const cards = rows.map((s): FeedCard => ({
     id: `signal:${s.id}`,
     kind: "signal" as const,
     overskrift: s.overskrift,
@@ -92,7 +95,10 @@ async function signalCards(instansId: string, area: string | null, profiles: Sou
     maskinindsamlet: s.maskinindsamlet,
     rating: toRating(rateSource({ navn: s.kilde, url: s.kildeUrl, sourceType: s.sourceType }, profiles)),
     articleId: articleBySignal.get(s.id) ?? null,
+    score: scores.has(s.id) ? toCardScore(scores.get(s.id)!) : null,
   }));
+  // Local Score først (højeste øverst), ikke-vurderede bagefter i tidsfølge.
+  return byScore ? [...cards].sort((a, b) => (b.score?.total ?? -1) - (a.score?.total ?? -1)) : cards;
 }
 
 async function tipCards(user: AuthorizedUser, area: string | null, profiles: SourceProfileLite[]): Promise<FeedCard[]> {
