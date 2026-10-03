@@ -2,7 +2,9 @@
 
 Status: 3. oktober 2026. CMS-fundament med lokal publicerings-outbox; ingen live indholdslevering eller manuelt udførte produktionsmigrations. Den additive outbox-migration er committed og køres ved almindelig CMS-deploy.
 
-Opdatering senere 3. oktober: Knowledge OS har nu implementeret et default-off V1-API for generiske eksterne referencer, immutable versionsmetadata/hashes, historik, idempotency og CAS-current med en separat begrænset runtime. Kontrakten ligger i Knowledge OS-repositoryets `docs/integration-external-objects.md` og `docs/external-objects.openapi.json`. API’et er lokalt testet, ikke migreret/aktiveret på Railway. Det modtager endnu ikke artikeltekst eller embeddings. CMS har nu en passiv outbox i begge publiceringsveje, men ingen aktiv V1-sender. Researchadapteren er uændret.
+**Livekontrol 3. oktober:** Railway-produktion kører stadig branchen `review-fixes` på `cd83b1`, mens outbox-committen `bc97425` ligger på `main`. En read-only katalogforespørgsel bekræftede, at outbox-tabellen endnu ikke findes i CMS-produktionsdatabasen. Pushet kode er derfor ikke det samme som deployet kode. `main` bygger oven på `review-fixes`; et eventuelt branch-skift kræver særskilt deploybeslutning. Knowledge OS har heller ikke kørt migration 012–014 på Railway. Se staging-readiness-rapporten i Knowledge OS-repositoryets `docs/staging-readiness-2026-10-03.md`.
+
+Opdatering senere 3. oktober: Knowledge OS har nu implementeret et default-off V1-API for generiske eksterne referencer, immutable versionsmetadata/hashes, historik, idempotency og CAS-current med en separat begrænset runtime. Kontrakten ligger i Knowledge OS-repositoryets `docs/integration-external-objects.md` og `docs/external-objects.openapi.json`. API’et er lokalt testet, ikke migreret/aktiveret på Railway. Det modtager endnu ikke artikeltekst eller embeddings. CMS-koden har nu en passiv outbox i begge publiceringsveje, men produktion kører fortsat den ældre branch og har ingen aktiv V1-sender. Researchadapteren er uændret.
 
 ## Formål og ejerskab
 
