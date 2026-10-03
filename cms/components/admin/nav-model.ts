@@ -86,6 +86,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
     label: "Kontrolrum",
     items: [
       { href: "/redaktion/kontrolrum", label: "Oversigt", icon: "control", allowed: (u) => canAccessPage(u, "kontrolrum"), exact: true },
+      { href: "/redaktion/kontrolrum/grundlag", label: "AI-grundlag", icon: "prompts", allowed: anyOf(PERMISSIONS.CONTROLROOM_MANAGE) },
       { href: "/redaktion/kontrolrum/prompts", label: "Prompts", icon: "prompts", allowed: anyOf(PERMISSIONS.CONTROLROOM_MANAGE) },
       { href: "/redaktion/kontrolrum/kilder", label: "Kilder og rating", icon: "ratings", allowed: anyOf(PERMISSIONS.CONTROLROOM_MANAGE) },
       { href: "/redaktion/kontrolrum/feeds", label: "Feeds", icon: "feeds", allowed: anyOf(PERMISSIONS.CONTROLROOM_MANAGE) },

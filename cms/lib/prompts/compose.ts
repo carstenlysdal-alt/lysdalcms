@@ -6,7 +6,7 @@
  * Rækkefølge i systemprompten:  LÅSTE sikkerhedsregler  ->  sprog- og stilblok (standard eller tilrettet).
  * Rækkefølge i opgaven:         instruktion (standard eller tilrettet) + evt. tillægslag  ->  SVARFORMAT (altid fra koden).
  */
-import { EDITORIAL_SAFETY, LAYER_DEFAULTS, LAYER_TASKS, STYLE_DEFAULT, TASK_DEFAULTS } from "./defaults";
+import { EDITORIAL_SAFETY, GRUNDLAG_HEADINGS, GRUNDLAG_PARTS, LAYER_DEFAULTS, LAYER_TASKS, STYLE_DEFAULT, TASK_DEFAULTS, type GrundlagPart } from "./defaults";
 
 export type PromptOverrides = Readonly<Record<string, string>>;
 
@@ -23,10 +23,28 @@ export function promptKeyForTask(task: string): string {
 export const STYLE_KEY = "sprog.stil";
 export const layerKey = (layer: keyof typeof LAYER_DEFAULTS) => `sprog.${layer}`;
 
+export const grundlagKey = (part: GrundlagPart) => `grundlag.${part}`;
+
+/**
+ * Redaktionens grundlag som tekstblok (tom streng, hvis intet er skrevet). Placeres EFTER de låste sikkerhedsregler:
+ * det er viden om mediet, ikke instruktioner, og kan aldrig ophæve sikkerhedsreglerne.
+ */
+export function composeGrundlag(overrides: PromptOverrides = {}): string {
+  const parts: string[] = [];
+  for (const part of GRUNDLAG_PARTS) {
+    const text = overrides[grundlagKey(part)]?.trim();
+    if (text) parts.push(`${GRUNDLAG_HEADINGS[part]}\n${text}`);
+  }
+  if (parts.length === 0) return "";
+  return `REDAKTIONENS GRUNDLAG (gælder alle opgaver; det er redaktionens egen beskrivelse af mediet og kommer efter sikkerhedsreglerne)\n\n${parts.join("\n\n")}`;
+}
+
 export function composeSystem(overrides: PromptOverrides = {}): string {
   const custom = overrides[STYLE_KEY];
-  if (custom === undefined) return `${EDITORIAL_SAFETY}\n\n${STYLE_DEFAULT}`;
-  return `${EDITORIAL_SAFETY}\n\n${custom}\n\n${CUSTOM_NOTE}`;
+  const grundlag = composeGrundlag(overrides);
+  const head = grundlag ? `${EDITORIAL_SAFETY}\n\n${grundlag}` : EDITORIAL_SAFETY;
+  if (custom === undefined) return `${head}\n\n${STYLE_DEFAULT}`;
+  return `${head}\n\n${custom}\n\n${CUSTOM_NOTE}`;
 }
 
 export type ComposedInstruction = {

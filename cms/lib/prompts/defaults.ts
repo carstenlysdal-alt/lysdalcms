@@ -133,3 +133,41 @@ export const LAYER_EXAMPLES: Record<keyof typeof LAYER_DEFAULTS, string> = {
   rubrikker: "RUBRIKREGLER\n- Start med det nye eller det lokale, ikke med afsenderen.\n- Brug nutid og aktiv form. Ingen spørgsmål som rubrik, ingen udråbstegn.\n- Navngiv stedet (by eller vej), når det er nyheden.",
   some: "TONE PÅ SOCIALE MEDIER\n- Skriv som en lokal redaktion: ligefrem og venlig, aldrig sensationspræget.\n- Højst ét emoji pr. opslag, og kun hvis emnet tåler det.\n- Nævn aldrig navne på sigtede eller ofre.",
 };
+
+/**
+ * Redaktionelt grundlag: det, AI'en altid skal kende, før den løser en opgave. Tomt som standard (ændrer intet i prompterne),
+ * men redaktionen skriver medie, målgruppe, journalistiske principper, værdier og koncepter her ét sted.
+ * Indsættes i systemprompten mellem de låste sikkerhedsregler og sprog/stil, og gælder alle opgaver.
+ */
+export const GRUNDLAG_DEFAULTS = {
+  medie: "",
+  principper: "",
+  vaerdier: "",
+  koncepter: "",
+} as const;
+
+export type GrundlagPart = keyof typeof GRUNDLAG_DEFAULTS;
+export const GRUNDLAG_PARTS = Object.keys(GRUNDLAG_DEFAULTS) as GrundlagPart[];
+
+/** Overskrift, som tekstdelen får i systemprompten. */
+export const GRUNDLAG_HEADINGS: Record<GrundlagPart, string> = {
+  medie: "MEDIET OG LÆSERNE",
+  principper: "JOURNALISTISKE PRINCIPPER",
+  vaerdier: "VÆRDIER",
+  koncepter: "KONCEPTER OG FORMATER",
+};
+
+export const GRUNDLAG_TITLES: Record<GrundlagPart, { titel: string; beskrivelse: string }> = {
+  medie: { titel: "Medie og målgruppe", beskrivelse: "Hvem I er, hvem I skriver til, og hvad I dækker. Giver AI'en samme udgangspunkt som en ny kollega." },
+  principper: { titel: "Journalistiske principper", beskrivelse: "Jeres faglige regler: kildekritik, kontradiktion, anonymitet, hvornår noget er en nyhed, og hvad der aldrig må ske." },
+  vaerdier: { titel: "Værdier", beskrivelse: "Det, mediet står for. Bruges, når AI'en skal vælge vinkel, tone og prioritering." },
+  koncepter: { titel: "Koncepter og formater", beskrivelse: "Jeres faste artikeltyper og greb, fx Citation, Syntese, Lokal Score og guider, og hvordan de bygges." },
+};
+
+/** Forslag, som redaktionen kan indsætte og tilrette (aktiveres først ved gem). */
+export const GRUNDLAG_EXAMPLES: Record<GrundlagPart, string> = {
+  medie: "Vi er et lokalt, uafhængigt nyhedsmedie for borgerne i kommunen. Læserne er voksne lokale, der vil vide, hvad der påvirker deres hverdag: skoler, trafik, byudvikling, foreninger og kommunens beslutninger. Vi dækker kommunen og dens nærområde, ikke landspolitik.",
+  principper: "- Kilden skal kunne findes: udtalelser, tal og beslutninger skal knyttes til en navngiven kilde.\n- Kontradiktion: den, der beskyldes, skal have mulighed for at svare, og svaret skal stå i samme artikel.\n- Skel mellem fakta, vurdering og påstand. Skriv aldrig en påstand som et faktum.\n- Anonyme kilder kun efter aftale med redaktøren. Navngiv aldrig sigtede, ofre eller mindreårige.",
+  vaerdier: "- Nærhed: vi går efter det, der betyder noget på vejen, i klassen og i byrådssalen.\n- Ordentlighed: vi er skarpe over for magten og ordentlige over for private.\n- Tillid: hellere én sikker nyhed end tre halve.",
+  koncepter: "- Citation: en artikel bygget op om ét ordret citat med kilde og dato, efterfulgt af kontekst.\n- Syntese: flere kilder samles til ét overblik, hvor hvert led kan spores tilbage til en kilde.\n- Lokal Score: en tydelig vurdering ud fra faste kriterier. Skalaen og begrundelsen vises altid.",
+};

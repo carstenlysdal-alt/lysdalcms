@@ -45,7 +45,7 @@ export function PromptEditor({ def, tilpasset, version, current, history }: { de
   const preview = useMemo(() => {
     // Uændret tekst = ren standard: intet "tilpasset"-mærke i det modellen får.
     const overrides = same ? {} : { [def.noegle]: text };
-    if (def.noegle === STYLE_KEY) return composeSystem(overrides);
+    if (def.noegle === STYLE_KEY || def.kind === "grundlag") return composeSystem(overrides);
     if (def.opgave) {
       const c = composeInstruction(def.opgave, overrides);
       return `OPGAVE (${def.opgave}, v${c.version}): ${c.instruction}\n\nSVARFORMAT (kun JSON): ${c.shape}`;

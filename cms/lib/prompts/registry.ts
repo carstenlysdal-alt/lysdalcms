@@ -3,11 +3,11 @@
  * En prompt findes kun i kontrolrummet, hvis den står her: ukendte nøgler afvises, så ingen kan gemme tekst under en
  * nøgle, koden aldrig læser. Sikkerhedsreglerne og svarformatet er bevidst IKKE i registeret som redigerbare felter.
  */
-import { EDITORIAL_SAFETY, LAYER_DEFAULTS, LAYER_EXAMPLES, LAYER_TASKS, STYLE_DEFAULT, TASK_DEFAULTS } from "./defaults";
-import { layerKey, promptKeyForTask, STYLE_KEY } from "./compose";
+import { EDITORIAL_SAFETY, GRUNDLAG_DEFAULTS, GRUNDLAG_EXAMPLES, GRUNDLAG_PARTS, GRUNDLAG_TITLES, LAYER_DEFAULTS, LAYER_EXAMPLES, LAYER_TASKS, STYLE_DEFAULT, TASK_DEFAULTS } from "./defaults";
+import { grundlagKey, layerKey, promptKeyForTask, STYLE_KEY } from "./compose";
 import { EDITORIAL_TASKS, TASK_INFO, type EditorialTask } from "../ai/editorial-schemas";
 
-export type PromptKind = "sprog" | "opgave" | "rating";
+export type PromptKind = "grundlag" | "sprog" | "opgave" | "rating";
 
 export type PromptDef = {
   noegle: string;
@@ -27,6 +27,7 @@ export type PromptDef = {
 };
 
 export const KIND_LABEL: Record<PromptKind, string> = {
+  grundlag: "Redaktionelt grundlag",
   sprog: "Sprog og stil",
   opgave: "Opgaver i skrivearbejdet",
   rating: "Ratingscore",
@@ -68,6 +69,21 @@ function build(): PromptDef[] {
       maxTegn: 2000,
     },
   ];
+  const grundlag: PromptDef[] = [];
+  for (const part of GRUNDLAG_PARTS) {
+    grundlag.push({
+      noegle: grundlagKey(part),
+      kind: "grundlag",
+      titel: GRUNDLAG_TITLES[part].titel,
+      beskrivelse: `${GRUNDLAG_TITLES[part].beskrivelse} Gælder alle AI-opgaver. Tom som standard.`,
+      standard: GRUNDLAG_DEFAULTS[part],
+      laast: null,
+      minTegn: 0,
+      maxTegn: 2500,
+      eksempel: GRUNDLAG_EXAMPLES[part],
+    });
+  }
+  defs.unshift(...grundlag);
   for (const layer of Object.keys(LAYER_DEFAULTS) as Array<keyof typeof LAYER_DEFAULTS>) {
     defs.push({
       noegle: layerKey(layer),

@@ -18,7 +18,8 @@ import { can, canEditArticle, PERMISSIONS } from "@/lib/permissions";
 import { rateLimit } from "@/lib/ratelimit";
 import { countWords } from "@/lib/blocks/text";
 import type { AiCallResult, AiFailureReason, AiTextClient } from "@/lib/frontpage/ai-client";
-import { composeInstruction, STYLE_KEY, type PromptOverrides } from "@/lib/prompts/compose";
+import { composeInstruction, grundlagKey, STYLE_KEY, type PromptOverrides } from "@/lib/prompts/compose";
+import { GRUNDLAG_PARTS } from "@/lib/prompts/defaults";
 import { loadPromptOverrides } from "@/lib/prompts/store";
 import { createAiTextClient, NO_AI_MESSAGE } from "./provider";
 import {
@@ -93,7 +94,8 @@ function providerOf(client: AiTextClient | null | undefined): string | null {
 /** Hvilke tilretninger fra kontrolrummet var i brug for opgaven? (nøgler, til audit og promptVersion) */
 function customKeys(task: EditorialTask, prompts: PromptOverrides): string[] {
   const keys = composeInstruction(task, prompts).custom;
-  return prompts[STYLE_KEY] !== undefined ? [STYLE_KEY, ...keys] : keys;
+  const system = [...GRUNDLAG_PARTS.map(grundlagKey).filter((k) => prompts[k]?.trim()), ...(prompts[STYLE_KEY] !== undefined ? [STYLE_KEY] : [])];
+  return [...system, ...keys];
 }
 
 async function audit(user: AuthorizedUser, task: EditorialTask, articleId: string | null | undefined, outcome: string, extra: { udbyder?: string | null; tokens?: { input: number; output: number }; tilpasset?: string[] } = {}) {
