@@ -59,6 +59,7 @@ export async function loadEditorOptions(user: AuthorizedUser): Promise<{ options
   return {
     options: { categories: formatted, authors, tags, geoTags, media },
     flags: {
+      canResearch: can(user, PERMISSIONS.ARTICLE_CREATE),
       canPublish: can(user, PERMISSIONS.ARTICLE_PUBLISH),
       canControlFrontpage: can(user, PERMISSIONS.FRONTPAGE_EDIT),
       canUseAi: can(user, PERMISSIONS.ARTICLE_AI_USE),

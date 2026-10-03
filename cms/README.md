@@ -87,3 +87,7 @@ Ved første publicering af en koblet freelanceopgave godkendes opgaven og oprett
 - Modernist-designsystem med Archivo, firkantede flader og designsystemets komponentklasser
 
 Den aktuelle afgrænsning er CMS-fundamentet plus CMS-03 og CMS-06 v1. E-mail/push-påmindelser, indsendelser, kalender, Signals/Topics, AI-lag, supporterdashboard, produktions-storage og offentlig frontend er roadmap.
+
+## Knowledge OS
+
+CMS-fundamentet omfatter research-panel og lokale indholds-/metrikprojektioner. Forbindelsen er slået fra som standard; mock kan bruges lokalt. Se [integrationsstatus og næste trin](../docs/knowledge-os-integration.md). Live indholdslevering og embeddings kræver de beskrevne næste leverancer.

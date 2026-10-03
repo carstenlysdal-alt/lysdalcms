@@ -36,6 +36,8 @@ export type ArticleEditorValue = {
 };
 
 export type EditorFlags = {
+  /** Research is read-only and uses article permissions, not AI generation permissions. */
+  canResearch?: boolean;
   canPublish: boolean;
   canControlFrontpage: boolean;
   canUseAi: boolean;

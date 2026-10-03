@@ -22,6 +22,7 @@ import { AiChip, CharCounter, SaveIndicator, SuggestButton, type SaveState } fro
 import { BlockEditor, type BlockAi } from "./block-editor";
 import { CoverField } from "./media-picker";
 import { SuggestionTray, type SuggestionActions } from "./ai-panels";
+import { KnowledgePanel } from "./knowledge-panel";
 import { useEditorialAi } from "./use-editorial-ai";
 import { useEditorBridge } from "./editor-bridge";
 import {
@@ -447,6 +448,7 @@ export function ArticleEditor({ article, options, flags, site, transitions, mode
         <PlanningSection {...sectionProps} />
         <AiSection {...sectionProps} />
         <SourcesSection {...sectionProps} />
+        {flags.canResearch && <KnowledgePanel key={site.base} articleId={articleId} title={form.titel} />}
         <MarkingSection {...sectionProps} aiRestricted={restricted} aiNone={aiNone} aiUses={aiUses} setAiBrug={(list) => { set("aiBrug", list); setAiHighlight(false); }} highlight={aiHighlight} hasUnverifiedSource={hasUnverifiedSource} />
         <AdvancedSection {...sectionProps} />
       </div>

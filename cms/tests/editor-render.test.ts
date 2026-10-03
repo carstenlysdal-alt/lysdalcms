@@ -120,3 +120,11 @@ test("kladde-preview bruger de offentlige komponenter; delings-previews og SERP 
   assert.match(serp, /Titlen klippes af Google/);
   assert.match(serp, /naestvedlokalt\.dk › nyheder › x/);
 });
+
+test("editor: research panel follows article permission flag and keeps search separate from save/publication", async () => {
+  const yes = await render(article(), { ...flags, canResearch: true });
+  const no = await render(article(), { ...flags, canResearch: false });
+  assert.match(yes, /Tidligere viden/); assert.match(yes, /Find tidligere viden/);
+  assert.ok(!no.includes("Tidligere viden")); assert.ok(!no.includes("Find tidligere viden"));
+  assert.match(yes, /type="button"[^>]*>Find tidligere viden/);
+});
