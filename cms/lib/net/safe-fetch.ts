@@ -17,7 +17,7 @@ import { checkUrlShape, hostAllowed, isBlockedIp } from "./ip-guard";
 
 export type FetchFailure = "ugyldig_url" | "blokeret" | "for_stor" | "timeout" | "indholdstype" | "http_fejl" | "omdirigeringer" | "netvaerk" | "robots";
 export type SafeFetchResult =
-  | { ok: true; url: string; status: number; contentType: string; body: Buffer }
+  | { ok: true; url: string; status: number; contentType: string; /** Tegnsæt fra Content-Type, hvis angivet. */ charset: string | null; body: Buffer }
   | { ok: false; code: FetchFailure; message: string; status?: number };
 
 export type SafeFetchOptions = {
@@ -196,7 +196,9 @@ export async function safeFetch(rawUrl: string, options: SafeFetchOptions = {}, 
       }
       continue;
     }
-    return { ok: true, url: shape.url.toString(), status: res.status, contentType: String(res.headers["content-type"] ?? "").split(";")[0].trim().toLowerCase(), body: res.body ?? Buffer.alloc(0) };
+    const rawType = String(res.headers["content-type"] ?? "");
+    const charset = rawType.match(/charset\s*=\s*"?([\w-]+)"?/i)?.[1]?.toLowerCase() ?? null;
+    return { ok: true, url: shape.url.toString(), status: res.status, contentType: rawType.split(";")[0].trim().toLowerCase(), charset, body: res.body ?? Buffer.alloc(0) };
   }
   return fail("omdirigeringer", "Kilden omdirigerer for mange gange.");
 }

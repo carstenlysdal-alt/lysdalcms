@@ -11,7 +11,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { KIND_LABEL, type PromptKind } from "@/lib/prompts/registry";
 import { listPromptStates } from "@/lib/prompts/store";
 
-const ORDER: PromptKind[] = ["grundlag", "sprog", "opgave", "rating"];
+const ORDER: PromptKind[] = ["grundlag", "sprog", "opgave", "generator", "rating"];
 const dateFmt = new Intl.DateTimeFormat("da-DK", { timeZone: "Europe/Copenhagen", day: "numeric", month: "short", year: "numeric" });
 
 export default async function PromptsPage() {

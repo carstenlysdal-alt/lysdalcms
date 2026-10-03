@@ -27,11 +27,12 @@ export default async function PromptEditorPage({ params }: { params: Promise<{ n
     beskrivelse: def.beskrivelse,
     standard: def.standard,
     laast: def.laast,
-    laastTitel: def.opgave ? "Svarformat (låst)" : "Sikkerhedsregler (låst)",
+    laastTitel: def.opgave || def.kind === "generator" ? "Svarformat (låst)" : "Sikkerhedsregler (låst)",
     minTegn: def.minTegn,
     maxTegn: def.maxTegn,
     eksempel: def.eksempel ?? null,
     opgave: def.opgave ?? null,
+    profil: def.profil ?? null,
     kind: def.kind,
   };
 

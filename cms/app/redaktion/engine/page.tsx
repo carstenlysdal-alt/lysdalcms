@@ -86,7 +86,8 @@ export default async function EnginePage({ searchParams }: { searchParams?: Prom
           <section className="eng-card eng-empty">
             <h2 className="eng-card-title">{message.title}</h2>
             <p className="cms-hint">{message.text}</p>
-            {canWrite && <Link className="cms-btn cms-btn-primary" href="/redaktion/engine?ny=1"><Plus size={16} aria-hidden="true" /> Ny historie</Link>}
+            {canWrite && <Link className="cms-btn cms-btn-ai-soft" href="/redaktion/engine/generer"><Sparkles size={16} aria-hidden="true" /> Generér artikel</Link>}
+        {canWrite && <Link className="cms-btn cms-btn-primary" href="/redaktion/engine?ny=1"><Plus size={16} aria-hidden="true" /> Ny historie</Link>}
           </section>
         </div>
         <aside className="eng-copilot" aria-label="Copilot"><EngineCopilot ctx={null} idle={idle} /></aside>
@@ -107,6 +108,7 @@ export default async function EnginePage({ searchParams }: { searchParams?: Prom
           <li className="cms-muted">{sync}</li>
           <li><span className={`eng-ai-pill${aiProvider ? "" : " is-off"}`}><Sparkles size={12} aria-hidden="true" /> {aiProvider ? `AI: ${aiProvider}` : "AI ikke tilsluttet"}</span></li>
         </ul>
+        {canWrite && <Link className="cms-btn cms-btn-ai-soft" href="/redaktion/engine/generer"><Sparkles size={16} aria-hidden="true" /> Generér artikel</Link>}
         {canWrite && <Link className="cms-btn cms-btn-primary" href="/redaktion/engine?ny=1"><Plus size={16} aria-hidden="true" /> Ny historie</Link>}
       </header>
       <EngineWorkspace initialPane={wantsEditor ? "edit" : "feed"} feed={<FeedPane data={feed} query={query} canWrite={canWrite} />}>

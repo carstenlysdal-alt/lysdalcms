@@ -32,7 +32,7 @@ export function categorySlugsFor(sourceType: string | null | undefined): string[
   return CATEGORY_BY_TYPE[sourceType ?? ""] ?? ["nyheder"];
 }
 
-async function uniqueSlug(base: string): Promise<string> {
+export async function uniqueSlug(base: string): Promise<string> {
   const root = slugify(base, 70) || "ny-historie";
   let slug = root;
   for (let i = 2; await db.article.findUnique({ where: { slug }, select: { id: true } }); i++) slug = `${root}-${i}`;

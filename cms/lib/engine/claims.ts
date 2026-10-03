@@ -157,6 +157,17 @@ export function groundClaims(articleText: string, sources: readonly ClaimSource[
   });
 }
 
+/**
+ * Står teksten ordret i en af kilderne (uden hensyn til store/små bogstaver, tegnsætning og mellemrum)? Returnerer det 1-baserede
+ * kildenummer, ellers null. Bruges til at afvise genererede citater, der ikke kan findes i originalen.
+ */
+export function verbatimIn(text: string, sources: ReadonlyArray<{ uddrag?: string | null }>): number | null {
+  const key = wordsOf(text);
+  if (!key) return null;
+  const idx = sources.findIndex((s) => s.uddrag && wordsOf(s.uddrag).includes(key));
+  return idx >= 0 ? idx + 1 : null;
+}
+
 export function summarizeClaims(checks: readonly ClaimCheck[]): { stoettet: number; mangler: number; ukontrolleret: number; total: number } {
   const count = (s: ClaimStatus) => checks.filter((c) => c.status === s).length;
   return { stoettet: count("stoettet"), mangler: count("mangler"), ukontrolleret: count("ukontrolleret"), total: checks.length };

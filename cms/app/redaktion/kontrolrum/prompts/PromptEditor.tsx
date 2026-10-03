@@ -5,7 +5,8 @@ import { History, RotateCcw, Save } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Field, Notice } from "@/components/ui/Layout";
-import { composeInstruction, composeSystem, CUSTOM_NOTE, STYLE_KEY } from "@/lib/prompts/compose";
+import { composeGeneration, composeInstruction, composeSystem, CUSTOM_NOTE, STYLE_KEY } from "@/lib/prompts/compose";
+import type { ProfileId } from "@/lib/generate/types";
 import { diffLines, diffStats } from "@/lib/prompts/diff";
 import { restorePromptAction, resetPromptAction, savePromptAction, type PromptFormState } from "./actions";
 
@@ -20,6 +21,7 @@ export type EditorDef = {
   maxTegn: number;
   eksempel: string | null;
   opgave: string | null;
+  profil: string | null;
   kind: string;
 };
 export type EditorHistory = { version: number; indhold: string; note: string | null; af: string | null; tid: string; tidLabel: string };
@@ -46,6 +48,11 @@ export function PromptEditor({ def, tilpasset, version, current, history }: { de
     // Uændret tekst = ren standard: intet "tilpasset"-mærke i det modellen får.
     const overrides = same ? {} : { [def.noegle]: text };
     if (def.noegle === STYLE_KEY || def.kind === "grundlag") return composeSystem(overrides);
+    if (def.kind === "generator") {
+      const profile = (def.profil ?? "nyhed") as ProfileId;
+      const c = composeGeneration(profile, overrides);
+      return `OPGAVE (generer-${profile}, ${c.version}): ${c.instruction}\n\nSVARFORMAT (kun JSON): ${c.shape}`;
+    }
     if (def.opgave) {
       const c = composeInstruction(def.opgave, overrides);
       return `OPGAVE (${def.opgave}, v${c.version}): ${c.instruction}\n\nSVARFORMAT (kun JSON): ${c.shape}`;

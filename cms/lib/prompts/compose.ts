@@ -6,6 +6,8 @@
  * Rækkefølge i systemprompten:  LÅSTE sikkerhedsregler  ->  sprog- og stilblok (standard eller tilrettet).
  * Rækkefølge i opgaven:         instruktion (standard eller tilrettet) + evt. tillægslag  ->  SVARFORMAT (altid fra koden).
  */
+import { GENERATOR_COMMON_DEFAULT, GENERATOR_PROFILE_DEFAULTS, GENERATOR_SHAPE, GENERATOR_VERSION } from "./generator-defaults";
+import type { ProfileId } from "../generate/types";
 import { EDITORIAL_SAFETY, GRUNDLAG_HEADINGS, GRUNDLAG_PARTS, LAYER_DEFAULTS, LAYER_TASKS, STYLE_DEFAULT, TASK_DEFAULTS, type GrundlagPart } from "./defaults";
 
 export type PromptOverrides = Readonly<Record<string, string>>;
@@ -74,4 +76,22 @@ export function composeInstruction(task: string, overrides: PromptOverrides = {}
   }
   if (custom.length > 0) instruction = `${instruction}\n\n${CUSTOM_NOTE}`;
   return { instruction, shape: def.shape, version: def.version, custom };
+}
+
+// ── Artikelgenerator ─────────────────────────────────────────────────────────
+
+export const GENERATOR_COMMON_KEY = "generator.faelles";
+export const generatorKey = (profile: ProfileId) => `generator.${profile}`;
+
+export type ComposedGeneration = { instruction: string; shape: string; version: string; custom: string[] };
+
+/** Fælles regler + profilens format, hver enten standard eller tilrettet. Svarformatet kommer altid fra koden. */
+export function composeGeneration(profile: ProfileId, overrides: PromptOverrides = {}): ComposedGeneration {
+  const custom: string[] = [];
+  const common = overrides[GENERATOR_COMMON_KEY];
+  const own = overrides[generatorKey(profile)];
+  if (common !== undefined) custom.push(GENERATOR_COMMON_KEY);
+  if (own !== undefined) custom.push(generatorKey(profile));
+  const text = `${common ?? GENERATOR_COMMON_DEFAULT}\n\n${own ?? GENERATOR_PROFILE_DEFAULTS[profile]}`;
+  return { instruction: custom.length ? `${text}\n\n${CUSTOM_NOTE}` : text, shape: GENERATOR_SHAPE, version: GENERATOR_VERSION, custom };
 }

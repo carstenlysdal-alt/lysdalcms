@@ -70,6 +70,7 @@ model Instance {
   promptRevisions        PromptRevision[]
   sourceProfiles         SourceProfile[]
   feedDefinitions        FeedDefinition[]
+  generationRuns         GenerationRun[]
 }
 
 // ── CMS-05: konfigurerbare roller (rettigheder som data, ikke hardkodet) ────
@@ -1053,4 +1054,32 @@ model FeedDefinition {
   @@unique([instansId, navn])
   @@index([instansId, aktiv])
   @@index([instansId, kategori])
+}
+
+/// Artikelgeneratoren: én kørsel (kildegrundlag + resultat efter værn). Kladden oprettes ud fra kørslen, aldrig ud fra klientens tekst.
+/// Kildeteksterne er redaktionens eget materiale til faktatjek; kørslen slettes automatisk efter udløbstidspunktet.
+model GenerationRun {
+  id            String    @id @default(cuid())
+  instansId     String
+  instans       Instance  @relation(fields: [instansId], references: [id])
+  userId        String
+  profil        String    // nyhed | citation | citationLang | syntese
+  vinkel        String?
+  kategoriId    String?
+  kilder        Json      // GenSource[] (højst 48.000 tegn tekst i alt)
+  resultat      Json      // GeneratedArticle efter værn
+  advarsler     Json      // GenWarning[]
+  statistik     Json
+  promptVersion String
+  modelId       String?
+  udbyder       String?
+  tokensInd     Int?
+  tokensUd      Int?
+  articleId     String?   // kladden, der er oprettet ud fra kørslen
+  udloebTid     DateTime
+  createdAt     DateTime  @default(now())
+
+  @@index([instansId, createdAt])
+  @@index([instansId, userId])
+  @@index([udloebTid])
 }

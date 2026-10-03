@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { FilePlus2, Link2, PenLine, TriangleAlert } from "lucide-react";
+import { FilePlus2, Link2, PenLine, Sparkles, TriangleAlert } from "lucide-react";
 import { attachSourceAction, startFromSignalAction, startFromTipAction } from "@/app/redaktion/engine/actions";
 import type { FeedCard } from "@/lib/engine/types";
 import { useEngineBus } from "./engine-bus";
@@ -64,6 +64,9 @@ export function FeedCardView({ card, canWrite }: { card: FeedCard; canWrite: boo
             {card.kind === "signal" ? <PenLine size={14} aria-hidden="true" /> : <FilePlus2 size={14} aria-hidden="true" />}
             {pending ? "Opretter…" : card.kind === "signal" ? "Skriv historien" : "Omsæt til kladde"}
           </button>
+        )}
+        {!openHref && canWrite && card.kind === "signal" && !card.rating.foelsom && (
+          <Link className="cms-btn cms-btn-ai-soft" href={`/redaktion/engine/generer?signal=${encodeURIComponent(rawId)}`}><Sparkles size={14} aria-hidden="true" /> Generér artikel</Link>
         )}
         {canAttach && bus.editorOpen && (
           <button type="button" className="cms-btn cms-btn-ai-soft" disabled={pending} onClick={attach}><Link2 size={14} aria-hidden="true" /> {card.kind === "arkiv" ? "Kobl som baggrund" : "Brug som kilde"}</button>

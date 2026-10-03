@@ -4,10 +4,12 @@
  * nøgle, koden aldrig læser. Sikkerhedsreglerne og svarformatet er bevidst IKKE i registeret som redigerbare felter.
  */
 import { EDITORIAL_SAFETY, GRUNDLAG_DEFAULTS, GRUNDLAG_EXAMPLES, GRUNDLAG_PARTS, GRUNDLAG_TITLES, LAYER_DEFAULTS, LAYER_EXAMPLES, LAYER_TASKS, STYLE_DEFAULT, TASK_DEFAULTS } from "./defaults";
-import { grundlagKey, layerKey, promptKeyForTask, STYLE_KEY } from "./compose";
+import { GENERATOR_COMMON_KEY, generatorKey, grundlagKey, layerKey, promptKeyForTask, STYLE_KEY } from "./compose";
+import { GENERATOR_COMMON_DEFAULT, GENERATOR_PROFILE_DEFAULTS, GENERATOR_SHAPE } from "./generator-defaults";
+import { PROFILE_IDS, PROFILES, type ProfileId } from "../generate/types";
 import { EDITORIAL_TASKS, TASK_INFO, type EditorialTask } from "../ai/editorial-schemas";
 
-export type PromptKind = "grundlag" | "sprog" | "opgave" | "rating";
+export type PromptKind = "grundlag" | "sprog" | "opgave" | "generator" | "rating";
 
 export type PromptDef = {
   noegle: string;
@@ -24,12 +26,15 @@ export type PromptDef = {
   /** Forslag til tekst, hvis standarden er tom (tillægslag). */
   eksempel?: string;
   opgave?: EditorialTask;
+  /** Generatorprofil (kun kind "generator"; udeladt for de fælles regler). */
+  profil?: ProfileId;
 };
 
 export const KIND_LABEL: Record<PromptKind, string> = {
   grundlag: "Redaktionelt grundlag",
   sprog: "Sprog og stil",
   opgave: "Opgaver i skrivearbejdet",
+  generator: "Artikelgenerator",
   rating: "Ratingscore",
 };
 
@@ -84,6 +89,29 @@ function build(): PromptDef[] {
     });
   }
   defs.unshift(...grundlag);
+  defs.push({
+    noegle: GENERATOR_COMMON_KEY,
+    kind: "generator",
+    titel: "Generator: fælles regler",
+    beskrivelse: "Regler for kilder, citater, skrift og metadata, der gælder alle profiler, når en hel artikel genereres ud fra feeds og originalkilder.",
+    standard: GENERATOR_COMMON_DEFAULT,
+    laast: GENERATOR_SHAPE,
+    minTegn: 100,
+    maxTegn: 4000,
+  });
+  for (const profil of PROFILE_IDS) {
+    defs.push({
+      noegle: generatorKey(profil),
+      kind: "generator",
+      titel: `Generator: ${PROFILES[profil].titel}`,
+      beskrivelse: `${PROFILES[profil].beskrivelse} Lægges oven på de fælles regler.`,
+      standard: GENERATOR_PROFILE_DEFAULTS[profil],
+      laast: GENERATOR_SHAPE,
+      minTegn: 30,
+      maxTegn: 3000,
+      profil,
+    });
+  }
   for (const layer of Object.keys(LAYER_DEFAULTS) as Array<keyof typeof LAYER_DEFAULTS>) {
     defs.push({
       noegle: layerKey(layer),
