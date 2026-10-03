@@ -17,6 +17,7 @@ import { assertPublishableMarking, normalizeAiUse } from "@/lib/marking";
 import { purgeInstance } from "@/lib/cache/purge";
 import { completeAssignmentOnPublish } from "@/lib/article-save";
 import { publicPath } from "@/lib/slug-redirect";
+import { queuePublishedRevision } from "@/lib/knowledge/publication-outbox";
 
 export const SCHEDULER_ACTOR = "scheduler";
 export const DEFAULT_BATCH = 20;
@@ -68,7 +69,7 @@ export async function publishDueArticles(opts: { now?: Date; batchSize?: number;
       if (moved.count !== 1) return false;
       const fresh = await tx.article.findUniqueOrThrow({ where: { id: article.id } });
       await completeAssignmentOnPublish(tx, fresh, article.instansId);
-      await tx.articleRevision.create({
+      const revision = await tx.articleRevision.create({
         data: {
           articleId: fresh.id,
           userId: null,
@@ -76,6 +77,7 @@ export async function publishDueArticles(opts: { now?: Date; batchSize?: number;
           note: `Publiceret (planlagt ${article.planlagtTid?.toISOString()}) af ${SCHEDULER_ACTOR}`,
         },
       });
+      await queuePublishedRevision(tx, revision.id);
       await writeAudit(tx, { instansId: article.instansId, actorLabel: SCHEDULER_ACTOR, action: "article.publish.scheduled", targetId: article.id, targetLabel: article.slug });
       return true;
     });

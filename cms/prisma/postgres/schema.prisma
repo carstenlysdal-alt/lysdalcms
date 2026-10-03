@@ -336,8 +336,18 @@ model ArticleRevision {
   snapshot   Json     // fuld artikel-snapshot ved publicering/væsentlig rettelse
   note       String?  // fx "Faktuel rettelse: …" (presseetisk, spec 2.1)
   createdAt  DateTime @default(now())
+  knowledgeOutbox KnowledgePublicationOutbox?
 
   @@index([articleId])
+}
+
+/// Varigt publiceringssignal, skrevet atomisk med den uforanderlige ArticleRevision.
+/// Ingen worker/sender er aktiv, og der lagres ingen ekstra artikeltekst her.
+model KnowledgePublicationOutbox {
+  id                String          @id @default(cuid())
+  articleRevisionId String          @unique
+  revision          ArticleRevision @relation(fields: [articleRevisionId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
 }
 
 // ── CMS-03 (basalt): medie ──────────────────────────────────────────────────

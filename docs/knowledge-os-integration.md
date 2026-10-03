@@ -1,8 +1,8 @@
 # Knowledge OS: CMS-fundament og næste integrationstrin
 
-Status: 3. oktober 2026. Første CMS-leverance; ingen live indholdslevering, schemaændringer eller produktionsmigrations.
+Status: 3. oktober 2026. CMS-fundament med lokal publicerings-outbox; ingen live indholdslevering eller manuelt udførte produktionsmigrations. Den additive outbox-migration er committed og køres ved almindelig CMS-deploy.
 
-Opdatering senere 3. oktober: Knowledge OS har nu implementeret et default-off V1-API for generiske eksterne referencer, immutable versionsmetadata/hashes, historik, idempotency og CAS-current med en separat begrænset runtime. Kontrakten ligger i Knowledge OS-repositoryets `docs/integration-external-objects.md` og `docs/external-objects.openapi.json`. API’et er lokalt testet, ikke migreret/aktiveret på Railway. Det modtager endnu ikke artikeltekst eller embeddings. CMS-runtime er uændret og benytter fortsat kun den eksisterende researchadapter; der er ingen aktiv V1-sender.
+Opdatering senere 3. oktober: Knowledge OS har nu implementeret et default-off V1-API for generiske eksterne referencer, immutable versionsmetadata/hashes, historik, idempotency og CAS-current med en separat begrænset runtime. Kontrakten ligger i Knowledge OS-repositoryets `docs/integration-external-objects.md` og `docs/external-objects.openapi.json`. API’et er lokalt testet, ikke migreret/aktiveret på Railway. Det modtager endnu ikke artikeltekst eller embeddings. CMS har nu en passiv outbox i begge publiceringsveje, men ingen aktiv V1-sender. Researchadapteren er uændret.
 
 ## Formål og ejerskab
 
@@ -19,8 +19,9 @@ Raw brugerhændelser bør blive i et analytics-lag. Stabile artikelreferencer og
 - Server-only adapter til den nuværende `GET /knowledge/context?topic=...`. Disabled er standard. Mock bruger tydeligt mærkede fixtures. Legacy-sandbox kræver eksplicit konfiguration af en isoleret installation og én CMS-instans.
 - `prepareRevisionForMemory`: autoriseret læsning af en eksisterende ArticleRevision og en whitelistet tekstprojektion af en publiceret version.
 - `prepareMetricsForMemory`: autoriseret læsning af eksisterende ArticleMetric og projektion af kumulative artikeltællere. Ingen visitor-identifikatorer eller rå events.
+- `KnowledgePublicationOutbox`: én række pr. publiceret `ArticleRevision.id`, oprettet atomisk ved manuel publicering/opdatering eller planlagt publicering. Kun et revisions-FK og tidspunkt; ingen duplikeret artikeltekst eller ekstern levering.
 
-De to prepare-services er lokale forberedelser og endnu ikke koblet til publicering, jobs eller HTTP-levering. Ingen artikel er sendt til Knowledge OS. Research-panelets resultater er heller ikke automatisk knyttet til en artikel eller gemt som ny evidens.
+De to prepare-services er lokale forberedelser og endnu ikke koblet til jobs eller HTTP-levering. Publiceringsflowet skriver kun en outbox-markør; ingen artikel er sendt til Knowledge OS. Research-panelets resultater er heller ikke automatisk knyttet til en artikel eller gemt som ny evidens.
 
 ## Afprøvning og konfiguration
 
@@ -78,7 +79,7 @@ Grafkvalitet bør senere måles særskilt: versions-/indholdsdækning, manglende
 
 1. **Knowledge OS autorisation og isolation:** verificér runtime-rolle, tenant/instance-grænser, backup/restore og migrationstilstand. Legacy-apiens globale adgangsnøgle kan ikke bruges som dokumentation for multi-tenant-sikkerhed.
 2. **Færdiggør Knowledge OS-kontrakterne:** første autoriserede ExternalObjectRef/version/CAS-service med idempotency og hash-/metadatakonflikter er implementeret default-off. Før tekstlevering mangler fuld isolation af legacy indhold, per-owner dedup, immutable captures, materialebinding, evidens og retraction-regler. Genbrug eksisterende Source/Document/Chunk. Source er ophav; dokument/capture og afledte artifacts skal have hver deres sporbarhed. V1-reference-API’ets 2xx betyder ikke, at tekst er gemt eller indekseret.
-3. **Holdbar CMS-outbox:** skriv leveringsintention i samme transaktion som publiceringsrevisionen. Dæk manuel publicering, planlagt publicering, senere opdateringer og tilbagetrækning. Worker håndterer retry/backoff, dedupe, status og reparation. Eksisterende operator-stream-events er ikke en holdbar leveringskø. Private indsendelser får først et særskilt adgangs- og dataminimeringsdesign.
+3. **Holdbar CMS-outbox:** fundamentet dækker nu manuel publicering, opdatering af en publiceret artikel og planlagt publicering med unik revisions-FK i samme transaktion. Tilbagetrækning/hard delete, worker, eksplicit leveringstilstand, retry/backoff, karantæne og reparation mangler. Eksisterende operator-stream-events er ikke en holdbar leveringskø. Private indsendelser får først et særskilt adgangs- og dataminimeringsdesign.
 4. **Backfill:** autoriseret, dry-run først, med eksisterende publicerede ArticleRevision-ID'er, cursor/checkpoint, konfliktkontrol og dedupe. En versionscapture må ikke rekonstrueres fra en senere redigeret artikel.
 5. **Enrichment og research:** embeddings og foreslåede entiteter/claims/relations/events/story-links på Knowledge OS-siden. Research efter entitet og sag, tidslinje og kilde-evidens kræver nye autoriserede read-services ud over topic-context.
 6. **Analytics-kobling:** kontrolleret eksport af aggregater og aftalte tidsserier til analytics-laget, join via stabile referencer og eksplicit entity-attribution. Definér graffunktionens egne kvalitetsmålinger før dashboardet bygges.
@@ -87,8 +88,6 @@ Den eksisterende `/ingest` skal ikke bruges som genvej til canonical CMS-version
 
 ## Kontrol og rollback
 
-17 målrettede tests består: rettigheder og aktiv instans, forfatterbegrænsning, auth/origin/body-validering, no-store, disabled/mock/fejlet/empty research, escaped ubetroet tekst, publicerede snapshots, mapping og metrik-grain. Produktionsbuild, TypeScript og lint af de berørte kodefiler består.
+19 målrettede tests består, herunder manuel publicering, live-opdatering, planlagt publicering, samtidig scheduler-kørsel, afvist publicering, tenant-afgrænsning og projektion. PostgreSQL-skema/migration er i sync, Prisma-skemaet validerer, TypeScript/lint og produktionsbuild består. Ny PostgreSQL-migration er kun genereret offline; ingen native database- eller Railway-migration blev kørt i denne arbejdsrunde. SQLite-test-runnerren kunne ikke bygge en ny template med Prisma `db push`; samme schema-engine-fejl opstår med det uændrede forrige skema. De målrettede tests og den fulde suite blev kørt på en kopi af den tidligere fungerende isolerede template med den nye outbox-tabel/FK/unique-indeks tilføjet. Hele suiten: 722/726 består; de fire uændrede `seed-prod.test.ts`-tests fejler fortsat i deres egen Prisma `db push`-opsætning. Buildet afgiver to eksisterende Edge Runtime-advarsler uden relation til outboxen.
 
-Hele testsuiten: 722/726 består. Fire eksisterende tests i `seed-prod.test.ts` fejler i samme before-hook med Prisma Schema engine error under opsætning af tom SQLite-testdatabase; også reproduceret ved særskilt kørsel af den uændrede testfil. Ingen rettelse af seed eller produktionsschema er med i leverancen. Browserkontrollens resultat er registreret i arbejdsloggen.
-
-Rollback: sæt `KNOWLEDGE_MODE=disabled` og redeploy. Det bevarer editorens gemme-/publiceringsflow og stopper eksterne researchkald. Fjern om ønsket CMS-committen ved normal revert. Ingen schema-rollback eller datamigration er nødvendig, fordi denne leverance ikke ændrer schema eller leverer indhold.
+Rollback: sæt `KNOWLEDGE_MODE=disabled` og redeploy for at stoppe researchkald. Outboxen sender intet uanset denne variabel. Ved kode-rollback skal outbox-tabellen først beholdes, så allerede oprettede signaler kan genafspilles. En senere fjernelse af tabellen kræver optælling af rækker, verificeret backup og særskilt retentionbeslutning; den additive migration rører ikke eksisterende artikelrækker. Rækker slettes i dag via FK-cascade, hvis den tilhørende revision hard-deletes, så retraction/retention skal afklares før en worker aktiveres.

@@ -24,6 +24,7 @@ import { purgeInstance } from "@/lib/cache/purge";
 import { isDefaultMeta, metaToDb, type ArticleMetaValue } from "@/lib/article-meta";
 import { recordSlugRedirect, sectionSlugOf } from "@/lib/slug-redirect";
 import { slugify } from "@/lib/slug";
+import { queuePublishedRevision } from "@/lib/knowledge/publication-outbox";
 
 export type ArticleSaveInput = {
   titel: string;
@@ -344,9 +345,10 @@ export async function persistArticleSave(p: Prepared): Promise<{ ok: true; artic
         }
         if (!draft && nextStatus === "Publiceret") {
           await completeAssignmentOnPublish(tx, updated, user.instansId);
-          await tx.articleRevision.create({
+          const revision = await tx.articleRevision.create({
             data: { articleId: updated.id, userId: user.id, snapshot: JSON.parse(JSON.stringify(updated)) as Prisma.InputJsonValue, note: "Publiceret" },
           });
+          await queuePublishedRevision(tx, revision.id);
         } else if (!draft && current.status !== nextStatus) {
           // Statusskift gemmes altid som revision (hvem, hvornår, fra/til) — også andre end publicering.
           await tx.articleRevision.create({

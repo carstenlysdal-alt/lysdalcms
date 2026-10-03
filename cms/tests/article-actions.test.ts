@@ -116,12 +116,23 @@ test("T6 nr. 8: AI-brug kræver et aktivt valg; 'Ingen AI brugt' er et gyldigt v
   r = await actions.saveArticle(none.id, {}, form({ slug: none.slug, targetStatus: "Publiceret", aiBrug: "Opfundet brug" }));
   assert.match(r.error ?? "", /Ukendt AI-brug/);
   assert.equal((await db.article.findUniqueOrThrow({ where: { id: none.id } })).status, "Godkendelse");
+  assert.equal(await db.knowledgePublicationOutbox.count({ where: { revision: { articleId: none.id } } }), 0,
+    "afvist publicering opretter intet leveringssignal");
 
   r = await actions.saveArticle(none.id, {}, form({ slug: none.slug, targetStatus: "Publiceret", aiBrug: "Ingen" }));
   assert.equal(r.error, undefined, r.error);
   const row = await db.article.findUniqueOrThrow({ where: { id: none.id } });
   assert.equal(row.status, "Publiceret");
   assert.deepEqual(row.aiBrug, ["Ingen"]);
+  const publishedRevision = await db.articleRevision.findFirstOrThrow({ where: { articleId: none.id, note: "Publiceret" } });
+  const queued = await db.knowledgePublicationOutbox.findMany({ where: { articleRevisionId: publishedRevision.id } });
+  assert.equal(queued.length, 1, "manuel publicering køer den konkrete uforanderlige revision");
+  const update = await actions.saveArticle(none.id, {}, form({ slug: none.slug, titel: "Rettet testartikel om byrådet", aiBrug: "Ingen" }));
+  assert.equal(update.error, undefined, update.error);
+  const publishedRevisions = await db.articleRevision.findMany({ where: { articleId: none.id, note: "Publiceret" }, orderBy: { createdAt: "asc" } });
+  assert.equal(publishedRevisions.length, 2);
+  assert.equal(await db.knowledgePublicationOutbox.count({ where: { articleRevisionId: { in: publishedRevisions.map((rev) => rev.id) } } }), 2,
+    "opdateret live artikel køer sin egen uforanderlige revision");
 
   // Kladdegem uden valg gemmer en TOM liste (ikke et stille "Ingen").
   const draft = await makeArticle({ status: "Idé" });
@@ -213,6 +224,8 @@ test("T6 nr. 9: statusskift gemmes som revision (hvem, fra/til)", async () => {
   const r = await actions.saveArticle(art.id, {}, form({ slug: art.slug, targetStatus: "Indsendt", aiBrug: "Ingen" }));
   assert.equal(r.error, undefined, r.error);
   const revs = await db.articleRevision.findMany({ where: { articleId: art.id } });
+  assert.equal(await db.knowledgePublicationOutbox.count({ where: { articleRevisionId: { in: revs.map((rev) => rev.id) } } }), 0,
+    "ikke-publicerede statusskift må ikke sendes til videnslaget");
   assert.equal(revs.length, 1);
   assert.equal(revs[0].userId, freelancer.id);
   assert.equal(revs[0].note, "Status: Idé → Indsendt");

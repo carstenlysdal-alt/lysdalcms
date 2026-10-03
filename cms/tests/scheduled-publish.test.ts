@@ -60,6 +60,8 @@ test("planlagt publicering: kun Planlagt og kun forfaldne; revision (scheduler),
   assert.equal(revs[0].userId, null);
   assert.match(revs[0].note ?? "", /scheduler/);
   assert.equal((revs[0].snapshot as { _actor: string })._actor, "scheduler");
+  assert.equal(await db.knowledgePublicationOutbox.count({ where: { articleRevisionId: revs[0].id } }), 1,
+    "planlagt publicering køer præcis den publicerede revision");
   assert.equal((await db.auditLog.findFirstOrThrow({ where: { instansId, targetId: due.id } })).actorLabel, "scheduler");
 
   for (const [a, status] of [[notYet, "Planlagt"], [draft, "Udkast"], [archived, "Arkiveret"], [noTime, "Planlagt"]] as const) {
@@ -72,6 +74,7 @@ test("planlagt publicering: kun Planlagt og kun forfaldne; revision (scheduler),
   const again = await sched.publishDueArticles({ now: new Date(), instansId });
   assert.equal(again.published.length, 0);
   assert.equal(await db.articleRevision.count({ where: { articleId: due.id } }), 1);
+  assert.equal(await db.knowledgePublicationOutbox.count({ where: { articleRevisionId: revs[0].id } }), 1);
 });
 
 test("planlagt publicering: håndhæver publiceringskrav (mærkning, AI-brug, kildeverifikation) — springer over i stedet for at publicere", async () => {
@@ -101,6 +104,8 @@ test("planlagt publicering: små batches (ældste først), tenant-afgrænsning o
   const [x, y] = await Promise.all([sched.publishDueArticles({ instansId }), sched.publishDueArticles({ instansId })]);
   assert.equal(x.published.length + y.published.length, 1);
   assert.equal(await db.articleRevision.count({ where: { articleId: a3.id } }), 1);
+  const raceRevision = await db.articleRevision.findFirstOrThrow({ where: { articleId: a3.id } });
+  assert.equal(await db.knowledgePublicationOutbox.count({ where: { articleRevisionId: raceRevision.id } }), 1);
   // uden instans-afgrænsning (som cron) publiceres alle instansers forfaldne
   const all = await sched.publishDueArticles({});
   assert.ok(all.published.some((p) => p.id === foreign.id));
