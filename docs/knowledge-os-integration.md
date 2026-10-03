@@ -2,6 +2,8 @@
 
 Status: 3. oktober 2026. Første CMS-leverance; ingen live indholdslevering, schemaændringer eller produktionsmigrations.
 
+Opdatering senere 3. oktober: Knowledge OS har nu implementeret et default-off V1-API for generiske eksterne referencer, immutable versionsmetadata/hashes, historik, idempotency og CAS-current med en separat begrænset runtime. Kontrakten ligger i Knowledge OS-repositoryets `docs/integration-external-objects.md` og `docs/external-objects.openapi.json`. API’et er lokalt testet, ikke migreret/aktiveret på Railway. Det modtager endnu ikke artikeltekst eller embeddings. CMS-runtime er uændret og benytter fortsat kun den eksisterende researchadapter; der er ingen aktiv V1-sender.
+
 ## Formål og ejerskab
 
 Knowledge OS skal være den vedvarende redaktionelle hukommelse: tekst, embeddings, entiteter, relationer, evidens og tidslig udvikling. CMS'et ejer artikler, publiceringsworkflow, redaktionelle rettigheder, publicerede artikelrevisioner og egne trafikmålinger. En Story i Knowledge OS er en længerevarende sag, som flere CMS-artikler kan knyttes til; den erstatter ikke Article.
@@ -75,7 +77,7 @@ Grafkvalitet bør senere måles særskilt: versions-/indholdsdækning, manglende
 ## Næste leverancer
 
 1. **Knowledge OS autorisation og isolation:** verificér runtime-rolle, tenant/instance-grænser, backup/restore og migrationstilstand. Legacy-apiens globale adgangsnøgle kan ikke bruges som dokumentation for multi-tenant-sikkerhed.
-2. **Stabile Knowledge OS-kontrakter:** implementér autoriserede ExternalObjectRef/capture/version-services med idempotency, hash-konflikter, evidens og retraction-regler. Genbrug eksisterende modeller efter auditten. Source er ophav; dokument/capture og afledte artifacts skal have hver deres sporbarhed.
+2. **Færdiggør Knowledge OS-kontrakterne:** første autoriserede ExternalObjectRef/version/CAS-service med idempotency og hash-/metadatakonflikter er implementeret default-off. Før tekstlevering mangler fuld isolation af legacy indhold, per-owner dedup, immutable captures, materialebinding, evidens og retraction-regler. Genbrug eksisterende Source/Document/Chunk. Source er ophav; dokument/capture og afledte artifacts skal have hver deres sporbarhed. V1-reference-API’ets 2xx betyder ikke, at tekst er gemt eller indekseret.
 3. **Holdbar CMS-outbox:** skriv leveringsintention i samme transaktion som publiceringsrevisionen. Dæk manuel publicering, planlagt publicering, senere opdateringer og tilbagetrækning. Worker håndterer retry/backoff, dedupe, status og reparation. Eksisterende operator-stream-events er ikke en holdbar leveringskø. Private indsendelser får først et særskilt adgangs- og dataminimeringsdesign.
 4. **Backfill:** autoriseret, dry-run først, med eksisterende publicerede ArticleRevision-ID'er, cursor/checkpoint, konfliktkontrol og dedupe. En versionscapture må ikke rekonstrueres fra en senere redigeret artikel.
 5. **Enrichment og research:** embeddings og foreslåede entiteter/claims/relations/events/story-links på Knowledge OS-siden. Research efter entitet og sag, tidslinje og kilde-evidens kræver nye autoriserede read-services ud over topic-context.
