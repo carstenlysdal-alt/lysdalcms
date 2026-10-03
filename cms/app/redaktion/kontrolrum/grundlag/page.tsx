@@ -87,7 +87,7 @@ export default async function GrundlagPage() {
         <section className="kr-twocol" aria-label="Rating, kilder og feeds">
           <div>
             <h2 className="kr-h2">Ratingscore</h2>
-            <p className="kr-layer-text">Her står de score, AI'en og kilderegisteret arbejder efter. Kildeskalaen er A (80+), B (60+), C (40+) og D (under 40). Jeres egne scorer for navngivne kilder går forud for de indbyggede regler.</p>
+            <p className="kr-layer-text">Her står de score, AI&apos;en og kilderegisteret arbejder efter. Kildeskalaen er A (80+), B (60+), C (40+) og D (under 40). Jeres egne scorer for navngivne kilder går forud for de indbyggede regler.</p>
             <ul className="kr-layer-links">
               {rating.map((s) => (
                 <li key={s.def.noegle}><Link href={hrefFor(promptKeyForTask(s.def.opgave ?? ""))}>{s.def.titel}</Link> <span className="kr-muted">{s.tilpasset ? `tilpasset v${s.row?.version}` : "standard"}</span></li>
@@ -123,7 +123,7 @@ export default async function GrundlagPage() {
               })}
             </tbody>
           </table>
-          <p className="kr-muted kr-note">Nøglen (DEEPSEEK_API_KEY) ligger som miljøvariabel på serveren og kan af sikkerhedshensyn ikke ses eller ændres i CMS'et. Alt andet om AI'en kan.</p>
+          <p className="kr-muted kr-note">Nøglen (DEEPSEEK_API_KEY) ligger som miljøvariabel på serveren og kan af sikkerhedshensyn ikke ses eller ændres i CMS&apos;et. Alt andet om AI&apos;en kan.</p>
         </section>
 
         <Notice tone="info" title="AI'en udgiver aldrig noget">

@@ -18,7 +18,7 @@ type ParsedSignal = z.output<typeof signalInputSchema>;
  * Et ændret signal (ny version) nulstilles til ulæst OG ugodkendt, så en agent ikke kan ændre teksten under en eksisterende
  * godkendelse. `meta` (skalarer) gemmes uændret og vises aldrig offentligt.
  */
-export async function upsertSignal(instansId: string, ingestKeyId: string, input: ParsedSignal): Promise<IngestItemResult> {
+export async function upsertSignal(instansId: string, ingestKeyId: string | null, input: ParsedSignal): Promise<IngestItemResult> {
   const kildeUrlNorm = normalizeUrl(input.kildeUrl);
   const brodtekst = input.braedtekst ?? input["brødtekst"] ?? null;
   const geo = await resolveGeo(instansId, input.geo);

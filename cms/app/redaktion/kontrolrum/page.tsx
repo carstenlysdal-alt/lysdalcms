@@ -34,7 +34,7 @@ export default async function ControlRoomPage() {
     manage && { href: "/redaktion/kontrolrum/grundlag", icon: <BookOpenText size={18} />, title: "AI-grundlag", stat: "Hvor står hvad", text: "Håndbogen til AI'en: medie, principper, værdier og koncepter, og et overblik over alle lag, rating og forbindelsen til DeepSeek." },
     manage && { href: "/redaktion/kontrolrum/prompts", icon: <ScrollText size={18} />, title: "Prompts", stat: `${custom} af ${prompts.length} tilpasset`, text: "Opgaver, sprog og stil, og ratingscore. Med versionshistorik, forskel mod standard og gendannelse." },
     manage && { href: "/redaktion/kontrolrum/kilder", icon: <ShieldCheck size={18} />, title: "Kilder og rating", stat: `${sources} aktive kilder`, text: "Din egen score for kilder, der går forud for de indbyggede regler. Prøv ratingen, før du gemmer." },
-    manage && { href: "/redaktion/kontrolrum/feeds", icon: <Antenna size={18} />, title: "Feeds", stat: `${feeds.filter((f) => f.aktiv).length} aktive af ${feeds.length}`, text: "Hvad agenterne skal overvåge: kilder, nøgleord og interval." },
+    manage && { href: "/redaktion/kontrolrum/feeds", icon: <Antenna size={18} />, title: "Kildepakke", stat: `${feeds.filter((f) => f.aktiv).length} aktive af ${feeds.length}`, text: "Byens feeds og kilder samlet: sortér, gruppér, redigér, hent nu og kopiér pakken til en anden by." },
     ingest && { href: "/redaktion/kontrolrum/ingest", icon: <KeyRound size={18} />, title: "Ingest", stat: `${activeKeys} aktive nøgler`, text: "API-nøgler til agenterne og overblik over, hvad de har leveret." },
   ].filter(Boolean) as Array<{ href: string; icon: React.ReactNode; title: string; stat: string; text: string }>;
 

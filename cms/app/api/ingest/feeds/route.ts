@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   const feeds = await listFeeds(auth.principal.instansId, { onlyActive: true });
   return NextResponse.json(
     {
-      feeds: feeds.map((f) => ({ id: f.id, navn: f.navn, type: f.type, url: f.url, sourceType: f.sourceType, omraade: f.omraadeTekst, inkluder: f.inkluder, ekskluder: f.ekskluder, intervalMin: f.intervalMin })),
+      feeds: feeds.map((f) => ({ id: f.id, navn: f.navn, type: f.type, url: f.url, sourceType: f.sourceType, omraade: f.omraadeTekst, inkluder: f.inkluder, ekskluder: f.ekskluder, intervalMin: f.intervalMin, kategori: f.kategori, prioritet: f.prioritet })),
     },
     { headers: { "Cache-Control": "no-store" } },
   );

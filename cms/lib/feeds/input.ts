@@ -17,7 +17,11 @@ export type FeedInput = {
   intervalMin: number;
   aktiv: boolean;
   noter: string | null;
+  kategori: string | null;
+  /** 1 = P0 (drift/breaking), 2 = P1, 3 = P2. */
+  prioritet: number;
 };
+export const PRIORITY_LABEL: Record<number, string> = { 1: "P0 · drift", 2: "P1 · historier", 3: "P2 · opdagelse" };
 export type ParsedFeed = { ok: true; value: FeedInput } | { ok: false; error: string };
 
 export const MAX_KEYWORDS = 20;
@@ -46,8 +50,10 @@ export function parseFeedInput(raw: Record<string, unknown>): ParsedFeed {
   const type = (FEED_TYPES as readonly string[]).includes(String(raw.type)) ? (raw.type as FeedType) : null;
   if (!type) return { ok: false, error: "Ukendt feed-type." };
 
+  const aktiv = raw.aktiv === undefined ? true : raw.aktiv === true || raw.aktiv === "on" || raw.aktiv === "true";
   const urlRaw = typeof raw.url === "string" ? raw.url.trim() : "";
-  if (type !== "mail" && !urlRaw) return { ok: false, error: "Angiv feedets adresse (URL)." };
+  // En kladde (inaktiv) må mangle adresse, fx en kilde fra kataloget. Et aktivt feed skal have en adresse.
+  if (aktiv && type !== "mail" && !urlRaw) return { ok: false, error: "Angiv feedets adresse (URL), før du slår det til." };
   if (urlRaw && !isHttpUrl(urlRaw)) return { ok: false, error: "Adressen skal være en gyldig http(s)-URL." };
 
   const sourceTypeRaw = typeof raw.sourceType === "string" ? raw.sourceType : "";
@@ -61,6 +67,9 @@ export function parseFeedInput(raw: Record<string, unknown>): ParsedFeed {
   const interval = Number(typeof raw.intervalMin === "string" ? raw.intervalMin.trim() : raw.intervalMin ?? 30);
   if (!Number.isInteger(interval) || interval < 5 || interval > 1440) return { ok: false, error: "Intervallet skal være mellem 5 og 1440 minutter." };
 
+  const prioritet = Number(typeof raw.prioritet === "string" ? raw.prioritet.trim() : raw.prioritet ?? 2);
+  if (!Number.isInteger(prioritet) || prioritet < 1 || prioritet > 3) return { ok: false, error: "Prioriteten skal være 1, 2 eller 3." };
+
   return {
     ok: true,
     value: {
@@ -72,8 +81,10 @@ export function parseFeedInput(raw: Record<string, unknown>): ParsedFeed {
       inkluder: inkluder.value,
       ekskluder: ekskluder.value,
       intervalMin: interval,
-      aktiv: raw.aktiv === undefined ? true : raw.aktiv === true || raw.aktiv === "on" || raw.aktiv === "true",
+      aktiv,
       noter: cleanText(raw.noter, 300, { multiline: true }) || null,
+      kategori: cleanText(raw.kategori, 60) || null,
+      prioritet,
     },
   };
 }

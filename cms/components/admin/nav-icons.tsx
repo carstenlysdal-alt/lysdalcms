@@ -1,5 +1,5 @@
 import {
-  Activity, Antenna, BarChart3, ClipboardList, FileText, FolderTree, Handshake, Images, Inbox, LayoutTemplate, Mail, MapPin,
+  Activity, Antenna, BarChart3, BookOpenText, ClipboardList, FileText, FolderTree, Handshake, Images, Inbox, LayoutTemplate, Mail, MapPin,
   Megaphone, MessageSquareText, Mic, PenLine, Radio, Rss, Tags, UserRound, Users, WalletCards, CircleHelp,
   KeyRound, ScrollText, ShieldCheck, SlidersHorizontal, Workflow, type LucideIcon,
 } from "lucide-react";
@@ -9,6 +9,7 @@ import type { NavIconKey } from "./nav-model";
 export const NAV_ICONS: Record<NavIconKey, LucideIcon> = {
   engine: Workflow,
   control: SlidersHorizontal,
+  grundlag: BookOpenText,
   prompts: ScrollText,
   ratings: ShieldCheck,
   feeds: Antenna,

@@ -34,6 +34,16 @@ export async function listAccessibleInstances(userId: string, homeInstansId: str
     .sort((a, b) => Number(b.home) - Number(a.home) || a.navn.localeCompare(b.navn, "da"));
 }
 
+/** Byer en bruger kan flytte indhold TIL: alle brugerens byer undtagen den aktive. */
+export async function listOtherCities(user: { id: string; instansId: string; homeInstansId: string }, client: Client = db): Promise<InstanceRef[]> {
+  return (await listAccessibleInstances(user.id, user.homeInstansId, client)).filter((c) => c.id !== user.instansId);
+}
+
+/** Må brugeren arbejde i byen? (hjemmeinstans eller adgangsrække, slået op i databasen nu) */
+export async function canAccessInstance(user: { id: string; homeInstansId: string }, instansId: string, client: Client = db): Promise<boolean> {
+  return (await accessibleInstanceIds(user.id, user.homeInstansId, client)).includes(instansId);
+}
+
 export type ResolvedInstance = { instansId: string; fellBack: boolean };
 
 /**

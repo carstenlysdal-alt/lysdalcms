@@ -1039,9 +1039,16 @@ model FeedDefinition {
   intervalMin Int      @default(30)
   aktiv       Boolean  @default(true)
   noter       String?
+  kategori    String?  // fri gruppering i kildepakken: Politi, Kommune, Trafik, Medier ...
+  prioritet   Int      @default(2) // 1 = P0 (drift/breaking), 2 = P1, 3 = P2
+  sidstHentet DateTime? // sidste manuelle hentning i CMS
+  sidsteStatus String? // ok | fejl
+  sidsteAntal Int?     // nye eller ændrede signaler ved sidste hentning
+  sidsteBesked String? // kort resultattekst (aldrig svarindhold)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@unique([instansId, navn])
   @@index([instansId, aktiv])
+  @@index([instansId, kategori])
 }
