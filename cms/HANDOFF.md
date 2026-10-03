@@ -1,11 +1,49 @@
 # HANDOFF — Lysdals CMS fundament og [By]Lokalt Nyhedsfrontend
 
-> **Status:** Fase 1 (Fundament: F-01 til F-08) og Fase 2 (Nyhedskernen: P-01 til P-10, K-01 til K-16) er fuldt implementeret og testet.
+> **Status:** Fase 1 (Fundament: F-01 til F-08) og Fase 2 (Nyhedskernen: P-01 til P-10, K-01 til K-16) er fuldt implementeret og testet. Production Engine og Kontrolrum (2026-10-03) er bygget; se øverste arbejdslog.
 > **Dato:** 2026-10-01. **Repo:** `localcms` (Next.js 16).
 > **Vigtigt:** Dette repository (`localcms`) er det **eneste førende og opdaterede repo**. Det tidligere `Local2027` er forældet og erstattet af dette.
 
 Denne fil er overleveringsloggen. Læs den FØR du bygger videre — den indeholder
 alle beslutninger, Next 16-faldgruber, præcis hvad der er gjort, og de næste trin.
+
+## Arbejdslog — Production Engine og Kontrolrum (2026-10-03)
+
+**Formål:** ét arbejdsbord til hele produktionen (signaler ind, skrivning med AI, kvalitets- og faktatjek, ratede kilder, søgning i mere materiale) og et kontrolrum, hvor prompts, kilderating, feeds og ingest styres som redigerbare data. Layoutet er hentet fra Carstens designudkast (tre felter), men bygget i CMS'ets eget designsystem (`--ed-*`/`ui-*`), ikke kopieret 1:1.
+
+### Production Engine — `/redaktion/engine`
+- **Venstre: signaler og feeds** (`components/engine/feed-pane.tsx`, `lib/engine/feed.ts`). Faner Signaler / Tip / Arkiv, områdefilter, kort med kilderating A-D, prioritet, "Maskinindsamlet, ikke vurderet" og advarsel ved politi/112. Tip viser aldrig kontaktoplysninger; meddelerens navn kun med `source.viewConfidential`. Arkiv = **emneoverlap** på nøgleord (`lib/engine/archive.ts`), bevidst *ikke* kaldt AI-match.
+- **Midten: den eksisterende artikel-editor** i ny `mode="engine"` (`components/editor/article-editor.tsx`). Al logik uændret (autosave, mærkning, AC-01, Krimi/Sundhed-spærring). Kilde- og videnbase-sektionerne er flyttet til copiloten i denne tilstand.
+- **Højre: copilot** (`components/engine/copilot.tsx` + `tab-*.tsx`): *Skriv* (AI-forslag, eksisterende opgaver), *Kvalitet* (SEO-score, LIX, rubrikform, AI-rubrikscore), *Fakta*, *Kilder*, *Søg*.
+- **Start historie fra signal** (`lib/engine/start.ts`): opretter en kladde (status Idé) med signalet som kilde **inkl. uddrag**; signalets tekst kopieres ikke ind i brødteksten. Idempotent via `Article.externalId = "engine:signal:<id>"`. Politi/112 lægges i Krimi, så AI-tekstforslag er spærret. Ugyldig kilde-URL giver en kladde uden URL, ikke en fejl.
+- **Faktatjek mod originalkilder** (`lib/engine/claims.ts`): deterministisk (ingen AI) kontrol af tal, klokkeslæt og **ordrette citater** mod kildernes uddrag. "Står i kilden" betyder kun, at ordlyden findes dér. AI-faktatjekket får samme uddrag som data og kan aldrig give grøn uden uddrag.
+- **Kilderating** (`lib/engine/source-rating.ts`): score 0-100 -> A (>=80), B (>=60), C (>=40), D. Rækkefølge: redaktørens karakter på kilden > kilderegisteret (domæne, så navn) > indbyggede regler (kildetype, kendte værter, nyhedsbureauer) > C. Plus kildegrundlags-tjek (primærkilde, flere kilder, uddrag, personfølsomhed) som **advarsler, ikke blokering**.
+- **Søg** (`lib/engine/material.ts`): egne artikler, signaler, tip, meddelersager og emner for den aktive by (rate-limited), plus det eksisterende vidensarkiv. Signaler og publicerede artikler kan lægges på historien som kilde.
+- **Interne kildefelter** `uddrag`, `type`, `rating` ligger på `ArticleMeta.kilder` (Json, ingen migration). De udgives **aldrig**: schema.org-citationen bruger kun titel/url/udgiver/dato (bevist i `tests/engine-server.test.ts`).
+
+### Kontrolrum — `/redaktion/kontrolrum`
+- Ny rettighed **`controlroom.manage`** (Ansvarshavende redaktør, Teknisk produktansvarlig). **Kør `npm run roles:sync` efter deploy**, og lad brugerne logge ind igen. Ingest-siden kræver den eksisterende `ingest.manage`.
+- **Prompts** (`lib/prompts/*`): register over alle 15 AI-opgaver + sprog/stil + to tillægslag + to ratingprompts. Standardteksterne ligger nu i `lib/prompts/defaults.ts`. Tilretninger gemmes pr. by (`PromptTemplate`) med uforanderlig historik (`PromptRevision`), diff mod standard, "sådan ser modellen den", samtidighedstjek (`baseVersion`) og gendannelse. **Låst i koden:** sikkerhedsreglerne og hver opgaves svarformat. Uden tilretninger er systemprompten og 12 af 13 opgaveprompts bytte-for-bytte uændrede (fingeraftryk i `tests/prompts.test.ts`); kun faktatjek er bevidst udvidet.
+- **Ratingprompts** (nye AI-opgaver `headlineRating`, `sourceRating`): foreslår score med delscorer/faktorer. Ikke tekstgenererende, så de virker også i Krimi/Sundhed. Rubrikscoren er AI's vurdering ud fra teksten, *ikke* målt klikrate. AI kan ikke slå kilder op og vurderer kun ud fra det, den får.
+- **Kilder og rating** (`SourceProfile`): kilderegister med score, domæne, note, "prøv ratingen", import af standardkilder (idempotent).
+- **Feeds** (`FeedDefinition`): hvad agenterne skal overvåge. **CMS'et henter ikke selv feeds:** agenten læser de aktive feeds med `GET /api/ingest/feeds` (scope `signals:write`) og leverer signaler som før.
+- **Ingest:** den manglende side til de eksisterende nøgle-handlinger (opret/tilbagekald, vis nøglen én gang) + status og endpoints.
+- AI-auditloggen får `tilpasset` (nøgler på tilretninger i brug); `promptVersion` får `+tilpasset`. Auditlog for kontrolrummet indeholder aldrig promptindhold, URL'er eller noter.
+
+### Datamodel og drift
+- Migration `20261003201443_kontrolrum_prompts_kilder_feeds` (kun `CREATE`, additiv): `PromptTemplate`, `PromptRevision`, `SourceProfile`, `FeedDefinition`. SQLite: `npx prisma db push`; Postgres: `prisma migrate deploy` (kører ved opstart).
+- Navigation: "Production Engine" er første punkt under Indhold; ny gruppe "Kontrolrum". Landingsside efter login er uændret (`/redaktion/artikler`).
+
+### Kvalitetskontrol
+- 777 tests grønne (726 før; +51 i `engine-core`, `engine-server`, `prompts`, `control-room` + opdateret `redaktion-access`). `npx tsc --noEmit` ren. `npm run lint`: 0 fejl, 66 advarsler (budget 76). `npm run build` grøn (nye ruter: engine, kontrolrum + 4 undersider).
+- Browser (Chromium, produktionsbuild): Engine og alle Kontrolrum-sider på 1440 px, Engine på 375 px; tal/tid/citater-kontrollen verificeret mod et rigtigt signal; ingen konsolfejl. Bot-beskyttelsen i `proxy.ts` giver 429 til headless-UA'er; brug en almindelig UA i automatiske tests.
+
+### Fundet undervejs (ikke rettet her)
+- `proxy.ts` giver `429 Too many requests` efter ca. 300 sider/min pr. IP, og **forhåndshentninger (Next `<Link>`-prefetch) ser ud til at tælle med**: ved første 429 i en browser-test var der sendt 13 sider + ca. 290 prefetch på ét minut (redaktionens sidebar har ca. 28 links). En hurtig redaktør kan derfor få 429. Production Engines filterlinks har `prefetch={false}` for ikke at forværre det. Test med `PAGE_RATE_LIMIT_PER_MIN=5000`, og undersøg prefetch-detektionen i `proxy.ts` (linje ~110) som egen opgave.
+
+### Bevidst ikke bygget (næste skridt)
+- "Kvik-publicér telegram" fra designudkastet (omgår godkendelse/mærkning), partshøring som gemt tjekpunkt, læsertalsbaseret "estimeret CTR" (ville være opdigtet), CMS-drevet RSS-hentning, "Afprøv prompt" mod en testtekst, indsæt-som-citatblok fra tip.
+- Prompts til frontforside-AI, chat og operatør ligger stadig i kode (`lib/frontpage/ai-*.ts`, `lib/operator/prompt.ts`) og kan føjes til registret efter samme mønster.
 
 ## Arbejdslog — Claude Design Forsideimplementering (Option 2a / 2b, 2026-09-30)
 

@@ -10,6 +10,8 @@ installNextMocks();
 
 type PageModule = { default: () => Promise<unknown> };
 const pages: Record<RedaktionPage, () => Promise<PageModule>> = {
+  engine: () => import("../app/redaktion/engine/page"),
+  kontrolrum: () => import("../app/redaktion/kontrolrum/page"),
   indbakke: () => import("../app/redaktion/indbakke/page"),
   qa: () => import("../app/redaktion/qa/page"),
   interview: () => import("../app/redaktion/interview/page"),
@@ -23,13 +25,13 @@ const pages: Record<RedaktionPage, () => Promise<PageModule>> = {
 
 /** Forventet adgang pr. standardrolle (T5 P1-2). */
 const EXPECTED: Record<string, RedaktionPage[]> = {
-  "Ansvarshavende redaktør": ["indbakke", "qa", "interview", "meddeler", "nyhedsbrev", "sponsor", "annoncer", "metrikker", "omraader"],
-  Redaktionsleder: ["indbakke", "qa", "interview", "meddeler", "nyhedsbrev", "sponsor", "annoncer", "metrikker", "omraader"],
-  Freelancejournalist: ["indbakke", "qa", "interview", "meddeler"],
+  "Ansvarshavende redaktør": ["engine", "kontrolrum", "indbakke", "qa", "interview", "meddeler", "nyhedsbrev", "sponsor", "annoncer", "metrikker", "omraader"],
+  Redaktionsleder: ["engine", "indbakke", "qa", "interview", "meddeler", "nyhedsbrev", "sponsor", "annoncer", "metrikker", "omraader"],
+  Freelancejournalist: ["engine", "indbakke", "qa", "interview", "meddeler"],
   Medieproducent: [],
-  "Community manager": ["indbakke", "qa", "interview", "meddeler", "nyhedsbrev"],
+  "Community manager": ["engine", "indbakke", "qa", "interview", "meddeler", "nyhedsbrev"],
   "Salgs- og partnerskabsansvarlig": ["sponsor", "annoncer"],
-  "Teknisk produktansvarlig": [],
+  "Teknisk produktansvarlig": ["kontrolrum"],
   Støtte: ["sponsor", "annoncer"],
 };
 

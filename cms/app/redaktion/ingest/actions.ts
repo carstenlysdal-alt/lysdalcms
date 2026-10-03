@@ -25,6 +25,8 @@ export async function createIngestKeyAction(name: string, scopes: string[], expi
     createdById: user.id,
   });
   revalidatePath("/redaktion/ingest");
+  revalidatePath("/redaktion/kontrolrum/ingest");
+  revalidatePath("/redaktion/kontrolrum");
   return { success: true as const, id: created.id, prefix: created.prefix, key: created.key };
 }
 
@@ -33,5 +35,7 @@ export async function revokeIngestKeyAction(keyId: string) {
   if (!user) return { success: false as const, error: "Ingen adgang." };
   const result = await db.apiKey.updateMany({ where: { id: String(keyId), instansId: user.instansId, revokedAt: null }, data: { revokedAt: new Date() } });
   revalidatePath("/redaktion/ingest");
+  revalidatePath("/redaktion/kontrolrum/ingest");
+  revalidatePath("/redaktion/kontrolrum");
   return result.count === 1 ? { success: true as const } : { success: false as const, error: "Nøglen findes ikke eller er allerede tilbagekaldt." };
 }

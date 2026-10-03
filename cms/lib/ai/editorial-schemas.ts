@@ -21,6 +21,8 @@ export const EDITORIAL_TASKS = [
   "factcheck",
   "seoComment",
   "publishTime",
+  "headlineRating",
+  "sourceRating",
 ] as const;
 export type EditorialTask = (typeof EDITORIAL_TASKS)[number];
 
@@ -48,6 +50,9 @@ export const TASK_INFO: Record<EditorialTask, TaskInfo> = {
   factcheck: { label: "Faktatjek-markering", textGenerating: false, aiUse: null, needsBody: true },
   seoComment: { label: "SEO-kommentar", textGenerating: false, aiUse: null, needsBody: false },
   publishTime: { label: "Udgivelsestidspunkt", textGenerating: false, aiUse: null, needsBody: false },
+  // Ratingopgaver foreslår kun en score med begrundelse; de genererer ingen artikeltekst og kan bruges i alle sektioner.
+  headlineRating: { label: "Rubrik-score", textGenerating: false, aiUse: null, needsBody: true },
+  sourceRating: { label: "Kildevurdering", textGenerating: false, aiUse: null, needsBody: false },
 };
 
 export function isTextGeneratingTask(task: EditorialTask): boolean {
@@ -158,6 +163,25 @@ export const publishTimeSchema = z.object({
 });
 export type PublishTimeResult = z.infer<typeof publishTimeSchema>;
 
+/** Hel score 0-100 (modellen svarer nogle gange med decimaler). */
+const score100 = z.number().min(0).max(100).transform((n) => Math.round(n));
+
+export const headlineRatingSchema = z.object({
+  score: score100,
+  delscorer: z.array(z.object({ kriterium: clean(60), score: score100, kommentar: clean(240) })).min(3).max(6),
+  begrundelse: clean(500),
+  forbedring: clean(240).nullish().transform((v) => v ?? undefined),
+});
+export type HeadlineRatingResult = z.infer<typeof headlineRatingSchema>;
+
+export const SOURCE_FACTOR_ASSESSMENTS = ["positiv", "neutral", "negativ"] as const;
+export const sourceRatingSchema = z.object({
+  score: score100,
+  faktorer: z.array(z.object({ faktor: clean(60), vurdering: z.enum(SOURCE_FACTOR_ASSESSMENTS), kommentar: clean(240) })).min(3).max(6),
+  begrundelse: clean(500),
+});
+export type SourceRatingResult = z.infer<typeof sourceRatingSchema>;
+
 export const TASK_SCHEMAS = {
   headlines: headlinesSchema,
   subheading: subheadingSchema,
@@ -172,6 +196,8 @@ export const TASK_SCHEMAS = {
   factcheck: factcheckSchema,
   seoComment: seoCommentSchema,
   publishTime: publishTimeSchema,
+  headlineRating: headlineRatingSchema,
+  sourceRating: sourceRatingSchema,
 } as const;
 
 export type TaskResult = {
@@ -188,12 +214,17 @@ export type TaskResult = {
   factcheck: FactcheckResult;
   seoComment: SeoCommentResult;
   publishTime: PublishTimeResult;
+  headlineRating: HeadlineRatingResult;
+  sourceRating: SourceRatingResult;
 };
 
 // ── Forespørgsel (delt mellem route, service og klient) ─────────────────────
 
 export const MAX_BODY_CHARS = 30_000;
 export const MAX_SOURCES = 20;
+/** Uddrag fra originalkilder, der sendes med til faktatjek: pr. kilde og samlet. */
+export const MAX_EXCERPT_CHARS = 3000;
+export const MAX_EXCERPTS_TOTAL = 24_000;
 
 export const editorialRequestSchema = z.object({
   task: z.enum(EDITORIAL_TASKS),
@@ -206,7 +237,7 @@ export const editorialRequestSchema = z.object({
     geoTagIds: z.array(z.string().max(60)).max(30).default([]),
     tagIds: z.array(z.string().max(60)).max(60).default([]),
     sprog: z.string().max(10).default("da"),
-    kilder: z.array(z.object({ titel: z.string().max(200), url: z.string().max(500).nullish(), udgiver: z.string().max(120).nullish() })).max(MAX_SOURCES).default([]),
+    kilder: z.array(z.object({ titel: z.string().max(200), url: z.string().max(500).nullish(), udgiver: z.string().max(120).nullish(), uddrag: z.string().max(MAX_EXCERPT_CHARS).nullish() })).max(MAX_SOURCES).default([]),
   }),
   params: z
     .object({
@@ -220,8 +251,13 @@ export const editorialRequestSchema = z.object({
       score: z.object({ score: z.number(), items: z.array(z.object({ label: z.string().max(80), status: z.string().max(10), hint: z.string().max(400) })).max(30) }).optional(),
       /** publishTime: ugedag/dagsdel brugeren overvejer (valgfrit). */
       weekday: z.string().max(20).optional(),
+      /** sourceRating: den kilde der vurderes (navn, url, type og et uddrag af dens tekst). */
+      kilde: z.object({ navn: z.string().max(200).nullish(), url: z.string().max(500).nullish(), type: z.string().max(40).nullish(), uddrag: z.string().max(4000).nullish() }).optional(),
     })
     .default({}),
+}).superRefine((value, ctx) => {
+  const total = value.context.kilder.reduce((n, k) => n + (k.uddrag?.length ?? 0), 0);
+  if (total > MAX_EXCERPTS_TOTAL) ctx.addIssue({ code: "too_big", maximum: MAX_EXCERPTS_TOTAL, origin: "string", message: "For mange kildeuddrag samlet.", path: ["context", "kilder"] });
 });
 export type EditorialRequest = z.input<typeof editorialRequestSchema>;
 export type EditorialRequestParsed = z.output<typeof editorialRequestSchema>;

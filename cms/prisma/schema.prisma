@@ -66,6 +66,10 @@ model Instance {
   frontpageSnapshots     FrontpageSnapshot[]
   frontpageDecisions     FrontpageDecision[]
   frontpageSlotMetrics   FrontpageSlotMetric[]
+  promptTemplates        PromptTemplate[]
+  promptRevisions        PromptRevision[]
+  sourceProfiles         SourceProfile[]
+  feedDefinitions        FeedDefinition[]
 }
 
 // ── CMS-05: konfigurerbare roller (rettigheder som data, ikke hardkodet) ────
@@ -962,4 +966,84 @@ model OperatorAction {
 
   @@index([instansId, userId, createdAt])
   @@index([sessionId])
+}
+
+// ── Kontrolrum: prompts, kilder og feeds som redigerbare data (additivt) ────
+// Kode: lib/prompts/**, lib/engine/**. UI: /redaktion/kontrolrum. Alle rækker er instansafgrænsede.
+
+/// Redaktionens tilretning af en prompt (nøgle valideres mod lib/prompts/registry.ts). Findes ingen aktiv række, bruges
+/// standardteksten i koden. Låste sikkerhedsregler og svarformat ligger KUN i koden og kan ikke overstyres her.
+model PromptTemplate {
+  id          String   @id @default(cuid())
+  instansId   String
+  instans     Instance @relation(fields: [instansId], references: [id])
+  noegle      String   // fx "opgave.headlines" | "sprog.lokal" | "rating.kilde"
+  indhold     String
+  aktiv       Boolean  @default(true)
+  version     Int      @default(1)
+  opdateretAf String?  // User.id
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  revisions   PromptRevision[]
+
+  @@unique([instansId, noegle])
+  @@index([instansId])
+}
+
+/// Uforanderlig historik: én række pr. gemt version (inkl. gendannelser), så enhver ændring kan ses og rulles tilbage.
+model PromptRevision {
+  id        String         @id @default(cuid())
+  promptId  String
+  prompt    PromptTemplate @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  instansId String
+  instans   Instance       @relation(fields: [instansId], references: [id])
+  version   Int
+  indhold   String
+  note      String?
+  aendretAf String?        // User.id
+  createdAt DateTime       @default(now())
+
+  @@unique([promptId, version])
+  @@index([instansId, createdAt])
+}
+
+/// Kilderegister: redaktionens egen vurdering af en kilde (0-100). Slås op via domæne eller navn før de indbyggede regler.
+model SourceProfile {
+  id        String   @id @default(cuid())
+  instansId String
+  instans   Instance @relation(fields: [instansId], references: [id])
+  navn      String
+  type      String   @default("andet") // SOURCE_TYPES (lib/ingest/schema.ts) | "nyhedsbureau" | "borger"
+  domaene   String?  // normaliseret værtsnavn uden www, fx "politi.dk"
+  score     Int      @default(50)      // 0-100; A >= 80, B >= 60, C >= 40, ellers D
+  note      String?
+  aktiv     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([instansId, navn])
+  @@index([instansId, aktiv])
+  @@index([instansId, domaene])
+}
+
+/// Feed-definition: hvad agenterne skal overvåge. Hentes af agenten via GET /api/ingest/feeds (scope signals:write).
+model FeedDefinition {
+  id          String   @id @default(cuid())
+  instansId   String
+  instans     Instance @relation(fields: [instansId], references: [id])
+  navn        String
+  type        String   @default("rss") // rss | api | web | mail
+  url         String?
+  sourceType  String?  // SOURCE_TYPES
+  omraadeTekst String? // geografi-hint til indtaget
+  inkluder    Json     // string[] nøgleord, der skal indgå
+  ekskluder   Json     // string[] nøgleord, der fravælger
+  intervalMin Int      @default(30)
+  aktiv       Boolean  @default(true)
+  noter       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([instansId, navn])
+  @@index([instansId, aktiv])
 }

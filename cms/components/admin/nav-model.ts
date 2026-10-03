@@ -11,6 +11,7 @@ import { canAccessPage, canViewPartnerBriefs } from "@/lib/redaktion-access";
  */
 export type NavIconKey =
   | "articles" | "write" | "media" | "tasks" | "fee" | "chat"
+  | "engine" | "control" | "prompts" | "ratings" | "feeds" | "ingest"
   | "inbox" | "qa" | "signals" | "sources" | "interview"
   | "analytics" | "newsletter" | "ads" | "sponsor"
   | "sections" | "areas" | "topics" | "frontpage"
@@ -24,6 +25,8 @@ type NavItemDef = {
   icon: NavIconKey;
   allowed: (user: PermissionUser) => boolean;
   badge?: NavBadgeKey;
+  /** Kortere navn til mobilens bundnavigation (smal plads). */
+  shortLabel?: string;
   /** Match kun præcis denne sti (ellers præfiks) — bruges når en anden menu-linje ligger under samme præfiks. */
   exact?: boolean;
 };
@@ -38,6 +41,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
     id: "content",
     label: "Indhold",
     items: [
+      { href: "/redaktion/engine", label: "Production Engine", shortLabel: "Engine", icon: "engine", allowed: (u) => canAccessPage(u, "engine") },
       { href: "/redaktion/artikler", label: "Artikler", icon: "articles", allowed: everyone, exact: true },
       { href: "/redaktion/artikler/ny", label: "Opret artikel", icon: "write", allowed: anyOf(PERMISSIONS.ARTICLE_CREATE), exact: true },
       { href: "/redaktion/medier", label: "Medier", icon: "media", allowed: everyone },
@@ -78,6 +82,17 @@ export const NAV_GROUPS: NavGroupDef[] = [
     ],
   },
   {
+    id: "control",
+    label: "Kontrolrum",
+    items: [
+      { href: "/redaktion/kontrolrum", label: "Oversigt", icon: "control", allowed: (u) => canAccessPage(u, "kontrolrum"), exact: true },
+      { href: "/redaktion/kontrolrum/prompts", label: "Prompts", icon: "prompts", allowed: anyOf(PERMISSIONS.CONTROLROOM_MANAGE) },
+      { href: "/redaktion/kontrolrum/kilder", label: "Kilder og rating", icon: "ratings", allowed: anyOf(PERMISSIONS.CONTROLROOM_MANAGE) },
+      { href: "/redaktion/kontrolrum/feeds", label: "Feeds", icon: "feeds", allowed: anyOf(PERMISSIONS.CONTROLROOM_MANAGE) },
+      { href: "/redaktion/kontrolrum/ingest", label: "Ingest", icon: "ingest", allowed: anyOf(PERMISSIONS.INGEST_MANAGE) },
+    ],
+  },
+  {
     id: "system",
     label: "System",
     items: [{ href: "/redaktion/brugere", label: "Brugere", icon: "users", allowed: anyOf(PERMISSIONS.USERS_MANAGE) }],
@@ -85,9 +100,9 @@ export const NAV_GROUPS: NavGroupDef[] = [
 ];
 
 /** Hurtigvalg i bundnavigationen (mobil), i prioriteret rækkefølge — de første fire de må se; femte plads er "Mere". */
-export const BOTTOM_NAV_PREFERENCE = ["/redaktion/artikler", "/redaktion/indbakke", "/redaktion/forside", "/redaktion/metrikker", "/redaktion/medier"];
+export const BOTTOM_NAV_PREFERENCE = ["/redaktion/engine", "/redaktion/artikler", "/redaktion/indbakke", "/redaktion/forside", "/redaktion/metrikker", "/redaktion/medier"];
 
-export type NavItem = { href: string; label: string; icon: NavIconKey; badge?: number; exact?: boolean };
+export type NavItem = { href: string; label: string; shortLabel?: string; icon: NavIconKey; badge?: number; exact?: boolean };
 export type NavGroup = { id: string; label: string; items: NavItem[] };
 
 /** Filtrér navigationen efter rettigheder. Tomme grupper udelades. */
@@ -97,7 +112,7 @@ export function buildNav(user: PermissionUser, counts: Partial<Record<NavBadgeKe
     label: group.label,
     items: group.items
       .filter((item) => item.allowed(user))
-      .map((item) => ({ href: item.href, label: item.label, icon: item.icon, exact: item.exact, badge: item.badge ? counts[item.badge] || undefined : undefined })),
+      .map((item) => ({ href: item.href, label: item.label, shortLabel: item.shortLabel, icon: item.icon, exact: item.exact, badge: item.badge ? counts[item.badge] || undefined : undefined })),
   })).filter((group) => group.items.length > 0);
 }
 

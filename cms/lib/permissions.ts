@@ -29,6 +29,8 @@ export const PERMISSIONS = {
   OPERATOR_USE: "operator.use",
   /** AI-forslag i artikel-editoren (overskrifter, SEO, opslagstekster, tags, alt-tekst …). Forslag — aldrig auto-gem/publicér. */
   ARTICLE_AI_USE: "article.ai.use",
+  /** Kontrolrummet (/redaktion/kontrolrum): redigér prompts, kilderegister (ratingscore) og feed-definitioner. Ændrer hvordan AI og indtag opfører sig. */
+  CONTROLROOM_MANAGE: "controlroom.manage",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

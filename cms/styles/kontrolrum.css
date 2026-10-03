@@ -1,0 +1,55 @@
+/* Kontrolrum (/redaktion/kontrolrum/*): små tillæg til admin-systemets ui-komponenter. */
+.kr-muted { color: var(--cms-text-muted, #5b5e80); font-size: 13px; }
+.kr-list { list-style: none; margin: 0; padding: 0; }
+.kr-list-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border-top: 1px solid var(--cms-border, #e6e8f0); }
+.kr-list-item:first-child { border-top: 0; }
+.kr-list-main { min-width: 0; }
+.kr-list-title { font-weight: 700; color: var(--cms-text, #151633); text-decoration: none; }
+.kr-list-title:hover { text-decoration: underline; }
+.kr-list-text { margin: 2px 0 0; font-size: 13px; color: var(--cms-text-muted, #5b5e80); }
+.kr-list-side { display: grid; gap: 4px; justify-items: end; flex: none; }
+
+.kr-editor { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.kr-editor-main, .kr-editor-side { display: grid; gap: 16px; min-width: 0; }
+.kr-textarea { font: 400 14px/1.55 var(--cms-font-mono, ui-monospace, monospace); min-height: 180px; resize: vertical; }
+.kr-reset { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--cms-border, #e6e8f0); display: grid; gap: 8px; justify-items: start; }
+.kr-pre { margin: 0; padding: 12px; border-radius: 8px; background: var(--cms-surface-sunken, #f6f7fb); font: 400 13px/1.55 var(--cms-font-mono, ui-monospace, monospace); white-space: pre-wrap; overflow-wrap: anywhere; }
+.kr-diff { margin: 0; padding: 0; border-radius: 8px; background: var(--cms-surface-sunken, #f6f7fb); font: 400 13px/1.55 var(--cms-font-mono, ui-monospace, monospace); white-space: pre-wrap; overflow-wrap: anywhere; overflow: hidden; }
+.kr-diff-line { display: block; padding: 0 12px; }
+.kr-diff-line.is-add { background: var(--cms-success-bg, #e4f6ec); color: var(--cms-success-ink, #12633f); }
+.kr-diff-line.is-del { background: var(--cms-danger-bg, #fce8e8); color: var(--cms-danger-ink, #8f2222); text-decoration: line-through; text-decoration-thickness: 1px; }
+.kr-diff-mark { display: inline-block; width: 1.5em; user-select: none; }
+.kr-history { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.kr-history-item { display: grid; gap: 4px; padding-bottom: 14px; border-bottom: 1px solid var(--cms-border, #e6e8f0); }
+.kr-history-item:last-child { border-bottom: 0; padding-bottom: 0; }
+.kr-history-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.kr-history-meta, .kr-history-note { margin: 0; font-size: 13px; color: var(--cms-text-muted, #5b5e80); }
+.kr-history-note { font-style: italic; }
+
+.kr-sources { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.kr-source { border: 1px solid var(--cms-border, #e6e8f0); border-radius: 10px; background: var(--cms-surface, #fff); }
+.kr-source.is-off { opacity: 0.7; }
+.kr-source-head { display: flex; align-items: center; gap: 12px; padding: 12px 14px; flex-wrap: wrap; }
+.kr-source-main { display: grid; gap: 2px; min-width: 0; flex: 1 1 220px; }
+.kr-source-note { font-size: 13px; color: var(--cms-text-muted, #5b5e80); overflow-wrap: anywhere; }
+.kr-source-score { font: 800 18px var(--cms-font-display, system-ui); font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+.kr-source-edit { display: grid; gap: 14px; padding: 14px; border-top: 1px solid var(--cms-border, #e6e8f0); }
+.kr-score { display: flex; align-items: center; gap: 12px; }
+.kr-score .input { max-width: 120px; }
+.kr-test-result { display: grid; gap: 6px; margin-top: 12px; padding: 12px; border-radius: 8px; background: var(--cms-surface-sunken, #f6f7fb); }
+.kr-test-result p { margin: 0; }
+.kr-fieldset { border: 1px solid var(--cms-border, #e6e8f0); border-radius: 10px; padding: 12px 16px; display: grid; gap: 10px; }
+.kr-fieldset legend { font-weight: 600; padding: 0 6px; }
+.kr-scope { align-items: flex-start; }
+.kr-secret { margin: 8px 0; padding: 10px; border-radius: 8px; background: var(--cms-surface-sunken, #f6f7fb); overflow-wrap: anywhere; }
+.kr-endpoints { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.kr-method { font-weight: 700; }
+
+@media (min-width: 1100px) {
+  .kr-editor { grid-template-columns: minmax(0, 1fr) 340px; }
+  .kr-editor-side { position: sticky; top: 16px; }
+}
+@media (max-width: 640px) {
+  .kr-list-item { flex-direction: column; align-items: flex-start; }
+  .kr-list-side { justify-items: start; }
+}

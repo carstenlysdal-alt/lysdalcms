@@ -8,7 +8,7 @@ import { ArrowLeft, Eye, Save, Send, TriangleAlert, X } from "lucide-react";
 import { saveArticle, type ArticleFormState } from "@/app/redaktion/artikler/actions";
 import { saveDraftAction } from "@/app/redaktion/artikler/draft-actions";
 import { applyAcceptedAiUse, isTextGeneratingTask, type EditorialTask, type TaskResult } from "@/lib/ai/editorial-schemas";
-import { articleMetaSchema, defaultUtm, type ArticleMetaForm, type SocialPlatform } from "@/lib/article-meta";
+import { articleMetaSchema, defaultUtm, META_LIMITS, type ArticleMetaForm, type SocialPlatform } from "@/lib/article-meta";
 import { blocksPlainText, countWords } from "@/lib/blocks/text";
 import { computeSeoScore } from "@/lib/editor/seo-score";
 import { formSignature, initialFormState, toFormData, type FormState } from "@/lib/editor/form-state";
@@ -17,6 +17,11 @@ import type { ArticleEditorValue, EditorFlags, EditorOptions, EditorSite, MediaO
 import { usesAi, AI_USE_NONE } from "@/lib/marking";
 import type { ArticleSeoInput } from "@/lib/seo/article-seo";
 import { absoluteUrl, articlePath } from "@/lib/seo/url";
+import { MAX_EXCERPT_CHARS, MAX_EXCERPTS_TOTAL } from "@/lib/ai/editorial-schemas";
+import type { SourceProfileLite } from "@/lib/engine/source-rating";
+import type { SourceDraft } from "@/lib/engine/types";
+import { useRegisterSourceAdder, type AddSourceResult } from "@/components/engine/engine-bus";
+import { EngineCopilot } from "@/components/engine/copilot";
 import { slugify } from "@/lib/slug";
 import { AiChip, CharCounter, SaveIndicator, SuggestButton, type SaveState } from "./primitives";
 import { BlockEditor, type BlockAi } from "./block-editor";
@@ -36,7 +41,9 @@ export type ArticleEditorProps = {
   flags: EditorFlags;
   site: EditorSite;
   transitions: string[];
-  mode: "panel" | "page";
+  mode: "panel" | "page" | "engine";
+  /** Production Engine: kilderegister og AI-udbyder til copiloten (kun i engine-tilstand). */
+  engine?: { profiles: SourceProfileLite[]; aiProvider: string | null };
   /** Panel-tilstand: link der lukker panelet (fjerner ?id=). */
   closeHref?: string;
   /** Kildeverifikation-flag fra marking (kladder fra Q&A/interview/meddeler). */
@@ -75,7 +82,7 @@ function statusTone(status: string): string {
   return "draft";
 }
 
-export function ArticleEditor({ article, options, flags, site, transitions, mode, closeHref, hasUnverifiedSource, children }: ArticleEditorProps) {
+export function ArticleEditor({ article, options, flags, site, transitions, mode, engine, closeHref, hasUnverifiedSource, children }: ArticleEditorProps) {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(() => initialFormState(article));
   const formRef = useRef(form);
@@ -170,7 +177,7 @@ export function ArticleEditor({ article, options, flags, site, transitions, mode
           setArticleId(res.id);
           idRef.current = res.id;
           const url = new URL(window.location.href);
-          if (mode === "panel") url.searchParams.set("id", res.id);
+          if (mode === "panel" || mode === "engine") url.searchParams.set("id", res.id);
           else url.pathname = `/redaktion/artikler/${res.id}`;
           window.history.replaceState(null, "", url.toString());
         }
@@ -258,10 +265,27 @@ export function ArticleEditor({ article, options, flags, site, transitions, mode
       geoTagIds: f.geoTagIds,
       tagIds: f.tagIds,
       sprog: f.sprog || "da",
-      kilder: f.meta.kilder.filter((k) => k.titel.trim()).map((k) => ({ titel: k.titel, url: k.url ?? null, udgiver: k.udgiver ?? null })),
+      kilder: (() => {
+        let budget = MAX_EXCERPTS_TOTAL;
+        return f.meta.kilder.filter((k) => k.titel.trim()).map((k) => {
+          const uddrag = k.uddrag?.trim() ? k.uddrag.trim().slice(0, Math.min(MAX_EXCERPT_CHARS, budget)) : null;
+          if (uddrag) budget -= uddrag.length;
+          return { titel: k.titel, url: k.url ?? null, udgiver: k.udgiver ?? null, uddrag };
+        });
+      })(),
     };
   }, []);
   const ai = useEditorialAi({ articleId, getContext });
+
+  // Production Engine: feedkort kan lægge en kilde (med uddrag) på den åbne artikel. Dubletter og loftet afvises med en forklaring.
+  const addSourceFromFeed = useCallback((s: SourceDraft): AddSourceResult => {
+    const current = formRef.current.meta.kilder;
+    if (current.some((k) => (s.url && k.url === s.url) || k.titel.trim().toLowerCase() === s.titel.trim().toLowerCase())) return { ok: false, message: "Kilden er allerede på historien." };
+    if (current.length >= META_LIMITS.kilder) return { ok: false, message: `Højst ${META_LIMITS.kilder} kilder pr. historie.` };
+    setForm((f) => ({ ...f, meta: { ...f.meta, kilder: [...f.meta.kilder, { titel: s.titel, url: s.url ?? undefined, udgiver: s.udgiver, dato: s.dato, uddrag: s.uddrag, type: s.type, rating: null }] } }));
+    return { ok: true, message: "Kilden er lagt på historien." };
+  }, []);
+  useRegisterSourceAdder(mode === "engine" ? addSourceFromFeed : null);
 
   // Giv AI-dockens chat artikelkonteksten (titel, underrubrik, brødtekst som ren tekst, sektion, geo, tags).
   useEditorBridge(() => {
@@ -345,8 +369,8 @@ export function ArticleEditor({ article, options, flags, site, transitions, mode
   const titleCount = charCount(form.titel, 110);
   const publishWarn = transitions.includes("Publiceret") && !score.complete;
 
-  return (
-    <div className="cms-ed" data-mode={mode}>
+  const body = (
+    <>
       <div className="cms-ed-head">
         {mode === "panel" && closeHref && (
           <Link href={closeHref} className="cms-btn cms-btn-quiet cms-ed-back" scroll={false}><ArrowLeft size={16} aria-hidden="true" /> Til listen</Link>
@@ -447,8 +471,8 @@ export function ArticleEditor({ article, options, flags, site, transitions, mode
         <SocialSection {...sectionProps} />
         <PlanningSection {...sectionProps} />
         <AiSection {...sectionProps} />
-        <SourcesSection {...sectionProps} />
-        {flags.canResearch && <KnowledgePanel key={site.base} articleId={articleId} title={form.titel} />}
+        {mode !== "engine" && <SourcesSection {...sectionProps} />}
+        {mode !== "engine" && flags.canResearch && <KnowledgePanel key={site.base} articleId={articleId} title={form.titel} />}
         <MarkingSection {...sectionProps} aiRestricted={restricted} aiNone={aiNone} aiUses={aiUses} setAiBrug={(list) => { set("aiBrug", list); setAiHighlight(false); }} highlight={aiHighlight} hasUnverifiedSource={hasUnverifiedSource} />
         <AdvancedSection {...sectionProps} />
       </div>
@@ -473,6 +497,36 @@ export function ArticleEditor({ article, options, flags, site, transitions, mode
       )}
 
       {children}
+    </>
+  );
+
+  if (mode !== "engine" || !engine) return <div className="cms-ed" data-mode={mode}>{body}</div>;
+
+  return (
+    <div className="cms-ed cms-ed-engine" data-mode="engine">
+      <div className="cms-ed-main eng-center">{body}</div>
+      <aside className="eng-copilot" aria-label="Copilot">
+        <EngineCopilot
+          ctx={{
+            articleId,
+            titel: form.titel,
+            manchet: form.manchet,
+            bodyText,
+            wordCount,
+            restricted,
+            flags,
+            kilder: form.meta.kilder,
+            setKilder: (kilder) => setMeta({ kilder }),
+            score,
+            profiles: engine.profiles,
+            aiProvider: engine.aiProvider,
+            ai: aiBundle,
+            raw: ai,
+            site,
+            options,
+          }}
+        />
+      </aside>
     </div>
   );
 }

@@ -24,7 +24,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
                   <Icon size={20} aria-hidden="true" />
                   {item.badge ? <span className="shell-bottom-badge" aria-hidden="true">{item.badge > 9 ? "9+" : item.badge}</span> : null}
                 </span>
-                <span>{item.label}</span>
+                <span>{item.shortLabel ?? item.label}</span>
               </Link>
             </li>
           );

@@ -1,0 +1,11 @@
+/*
+  Kilderating A-D (components/engine/rating-badge.tsx). Selvstændigt stilark, så badgen ser ens ud overalt (Production Engine og
+  Kontrolrum). Bruger de globale --cms-* tokens; fallbacks svarer til editorens farver. Karakteren bæres af bogstav og tekst, aldrig kun af farve.
+*/
+.eng-grade { --g-fg: var(--cms-text-muted, #5b5e80); --g-bg: var(--cms-surface-sunken, #eef0f6); display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 3px; border-radius: 999px; background: var(--g-bg); font-size: 12px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+.eng-grade-letter { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--g-fg); color: #fff; font: 800 12px var(--cms-font-display, system-ui, sans-serif); }
+.eng-grade-label { color: var(--cms-text, #151633); font-weight: 600; }
+.eng-grade-A { --g-fg: var(--cms-success, #1a7f52); --g-bg: var(--cms-success-bg, #e4f6ec); }
+.eng-grade-B { --g-fg: var(--cms-planned, #2563eb); --g-bg: var(--cms-planned-bg, #e6eefd); }
+.eng-grade-C { --g-fg: var(--cms-review, #8a5a12); --g-bg: var(--cms-review-bg, #fdf3dc); }
+.eng-grade-D { --g-fg: var(--cms-danger, #c23535); --g-bg: var(--cms-danger-bg, #fce8e8); }

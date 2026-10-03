@@ -200,6 +200,8 @@ export const META_LIMITS = {
   keyword: 60,
   medforfattere: 12,
   kilder: 30,
+  /** Uddrag af en kildes egen tekst (internt, til faktatjek). */
+  uddrag: 4000,
 } as const;
 
 // ── Zod-skema ───────────────────────────────────────────────────────────────
@@ -285,6 +287,13 @@ const sourceSchema = z.object({
   url: httpUrl("Kilde-URL").optional(),
   udgiver: optText(120).optional(),
   dato: optText(40).optional(),
+  // Interne felter til Production Engine. De udgives ALDRIG: schema.org-citationen (lib/seo/jsonld.ts) bruger kun titel/url/udgiver/dato.
+  /** Uddrag af kildens egen tekst. Bruges til at kontrollere tal og citater i artiklen mod originalen. */
+  uddrag: optText(META_LIMITS.uddrag).optional(),
+  /** Kildetype (SOURCE_TYPES/"nyhedsbureau"/"borger"/"meddeler"); ratingen slår den op i kilderegisteret. */
+  type: optText(40).optional(),
+  /** Redaktørens egen karakter, der går forud for registeret og standarden. */
+  rating: z.enum(["A", "B", "C", "D"]).nullish().transform((v) => v ?? null).optional(),
 });
 
 const paywallSchema = z

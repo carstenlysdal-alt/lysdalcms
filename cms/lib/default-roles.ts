@@ -12,6 +12,6 @@ export const DEFAULT_ROLES = [
   { navn: "Medieproducent", permissions: [PERMISSIONS.MEDIA_MANAGE, PERMISSIONS.HONOR_VIEW_OWN] },
   { navn: "Community manager", permissions: [PERMISSIONS.ARTICLE_CREATE, PERMISSIONS.NEWSLETTER_MANAGE] },
   { navn: "Salgs- og partnerskabsansvarlig", permissions: [PERMISSIONS.SUPPORT_READ, PERMISSIONS.SUPPORT_MANAGE, PERMISSIONS.ADS_MANAGE] },
-  { navn: "Teknisk produktansvarlig", permissions: [PERMISSIONS.INGEST_MANAGE] },
+  { navn: "Teknisk produktansvarlig", permissions: [PERMISSIONS.INGEST_MANAGE, PERMISSIONS.CONTROLROOM_MANAGE] },
   { navn: "Støtte", permissions: [PERMISSIONS.SUPPORT_READ] },
 ] as const;

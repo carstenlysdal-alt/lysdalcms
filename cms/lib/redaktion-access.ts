@@ -9,6 +9,8 @@ import { PERMISSIONS, can, type Permission, type PermissionUser } from "./permis
  * og meddelerkontakter kræver derfor derudover SOURCE_VIEW_CONFIDENTIAL (se `canViewSourceDetails`).
  */
 export const PAGE_PERMISSIONS = {
+  engine: [PERMISSIONS.ARTICLE_CREATE],
+  kontrolrum: [PERMISSIONS.CONTROLROOM_MANAGE, PERMISSIONS.INGEST_MANAGE],
   indbakke: [PERMISSIONS.ARTICLE_CREATE],
   qa: [PERMISSIONS.ARTICLE_CREATE],
   interview: [PERMISSIONS.ARTICLE_CREATE],

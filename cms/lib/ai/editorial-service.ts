@@ -18,12 +18,16 @@ import { can, canEditArticle, PERMISSIONS } from "@/lib/permissions";
 import { rateLimit } from "@/lib/ratelimit";
 import { countWords } from "@/lib/blocks/text";
 import type { AiCallResult, AiFailureReason, AiTextClient } from "@/lib/frontpage/ai-client";
+import { composeInstruction, STYLE_KEY, type PromptOverrides } from "@/lib/prompts/compose";
+import { loadPromptOverrides } from "@/lib/prompts/store";
 import { createAiTextClient, NO_AI_MESSAGE } from "./provider";
 import {
   commentOnSeo,
   EDITORIAL_PROMPT_VERSION,
   factCheck,
   improveText,
+  rateHeadline,
+  rateSourceWithAi,
   suggestAltText,
   suggestHeadlines,
   suggestOgTexts,
@@ -65,6 +69,8 @@ export type EditorialServiceDeps = {
   client?: AiTextClient | null;
   /** Slå rate limit fra (kun tests der kalder mange gange). */
   skipRateLimit?: boolean;
+  /** Test/overstyring af kontrolrummets tilretninger. Udeladt = læses fra databasen for brugerens instans. */
+  prompts?: PromptOverrides;
   timeoutMs?: number;
   retries?: number;
   sleep?: (ms: number) => Promise<void>;
@@ -84,7 +90,13 @@ function providerOf(client: AiTextClient | null | undefined): string | null {
   return client ? (client.providerId ?? "injiceret") : null;
 }
 
-async function audit(user: AuthorizedUser, task: EditorialTask, articleId: string | null | undefined, outcome: string, extra: { udbyder?: string | null; tokens?: { input: number; output: number } } = {}) {
+/** Hvilke tilretninger fra kontrolrummet var i brug for opgaven? (nøgler, til audit og promptVersion) */
+function customKeys(task: EditorialTask, prompts: PromptOverrides): string[] {
+  const keys = composeInstruction(task, prompts).custom;
+  return prompts[STYLE_KEY] !== undefined ? [STYLE_KEY, ...keys] : keys;
+}
+
+async function audit(user: AuthorizedUser, task: EditorialTask, articleId: string | null | undefined, outcome: string, extra: { udbyder?: string | null; tokens?: { input: number; output: number }; tilpasset?: string[] } = {}) {
   try {
     await writeAudit(db, {
       instansId: user.instansId,
@@ -94,7 +106,7 @@ async function audit(user: AuthorizedUser, task: EditorialTask, articleId: strin
       targetId: articleId ?? null,
       targetLabel: TASK_INFO[task].label,
       // Aldrig indhold: kun opgave, promptversion, udfald, udbyder og tokental (til senere forbrugsmåling).
-      detail: { task, promptVersion: EDITORIAL_PROMPT_VERSION, udfald: outcome, ...(extra.udbyder !== undefined ? { udbyder: extra.udbyder } : {}), ...(extra.tokens ? { tokensInd: extra.tokens.input, tokensUd: extra.tokens.output } : {}) },
+      detail: { task, promptVersion: EDITORIAL_PROMPT_VERSION, udfald: outcome, ...(extra.tilpasset?.length ? { tilpasset: extra.tilpasset.join(",") } : {}), ...(extra.udbyder !== undefined ? { udbyder: extra.udbyder } : {}), ...(extra.tokens ? { tokensInd: extra.tokens.input, tokensUd: extra.tokens.output } : {}) },
     });
   } catch (error) {
     console.error("[article-ai] auditlog fejlede", error instanceof Error ? error.message : "ukendt");
@@ -169,7 +181,12 @@ export async function runEditorialTask(user: AuthorizedUser, request: EditorialR
     availableGeo: allGeo.map((g) => g.navn),
   };
 
-  const ai = { client, timeoutMs: deps.timeoutMs, retries: deps.retries, sleep: deps.sleep };
+  if (task === "sourceRating" && !params.kilde) return fail("ugyldig", "Angiv den kilde, der skal vurderes.");
+
+  // Kontrolrummets tilretninger (prompts) for denne instans: tom = ren standard. Svarformat og sikkerhedsregler kan ikke tilrettes.
+  const prompts = deps.prompts ?? (await loadPromptOverrides(user.instansId));
+  const tilpasset = customKeys(task, prompts);
+  const ai = { client, prompts, timeoutMs: deps.timeoutMs, retries: deps.retries, sleep: deps.sleep };
   let result: AiCallResult<unknown>;
   switch (task) {
     case "headlines": result = await suggestHeadlines(input, ai); break;
@@ -185,19 +202,21 @@ export async function runEditorialTask(user: AuthorizedUser, request: EditorialR
     case "factcheck": result = await factCheck(input, ai); break;
     case "seoComment": result = await commentOnSeo(input, params.score ?? { score: 0, items: [] }, ai); break;
     case "publishTime": result = await suggestPublishTime(input, { weekday: params.weekday }, ai); break;
+    case "headlineRating": result = await rateHeadline(input, ai); break;
+    case "sourceRating": result = await rateSourceWithAi(input, params.kilde ?? {}, ai); break;
   }
 
   if (!result.ok) {
-    await audit(user, task, articleId, `fejl:${result.reason}`, { udbyder });
+    await audit(user, task, articleId, `fejl:${result.reason}`, { udbyder, tilpasset });
     // Dansk udbydertekst (fx "kontoen mangler saldo") vises kun for api-fejl; ellers den faste tekst.
     return fail(result.reason === "ingen-noegle" ? "ingen-noegle" : "ai-fejl", result.reason === "api-fejl" && result.userMessage ? result.userMessage : FAILURE_TEXT[result.reason]);
   }
-  await audit(user, task, articleId, "ok", { udbyder, tokens: result.usage ? { input: result.usage.inputTokens, output: result.usage.outputTokens } : undefined });
+  await audit(user, task, articleId, "ok", { udbyder, tilpasset, tokens: result.usage ? { input: result.usage.inputTokens, output: result.usage.outputTokens } : undefined });
   return {
     ok: true,
     task,
     suggestion: result.value as TaskResult[typeof task],
-    promptVersion: EDITORIAL_PROMPT_VERSION,
+    promptVersion: tilpasset.length ? `${EDITORIAL_PROMPT_VERSION}+tilpasset` : EDITORIAL_PROMPT_VERSION,
     modelId: result.modelId,
     aiUse: aiUseForTask(task),
   } as EditorialResponse;
